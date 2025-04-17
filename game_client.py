@@ -6,6 +6,14 @@ from input import Input
 from state import Team
 
 
+COLOR_FIELD = pygame.Color("#729861")
+COLOR_PLAYER_BLUE = pygame.Color("#5688e4")
+COLOR_PLAYER_RED = pygame.Color("#e46f56")
+COLOR_BORDER = pygame.Color("black")
+COLOR_BORDER_KICK = pygame.Color("white")
+COLOR_KICK_RANGE = pygame.Color(200, 200, 200, 100)
+
+
 def main():
     # Criar socket TCP
     client_socket = socket.create_connection(('127.0.0.1', 12345))
@@ -83,21 +91,13 @@ def receive_data(client_socket):
 
 
 def get_input(keys):
-    input = Input()
-
-    input.up = keys[pygame.K_w]
-    input.down = keys[pygame.K_s]
-    input.left = keys[pygame.K_a]
-    input.right = keys[pygame.K_d]
-    input.kick = keys[pygame.K_SPACE]
-
-    return input
+    return Input(keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE])
 
 
 def render(state, screen, transparent_surface, name_font, sockname):
     # Desenhar fundo
     transparent_surface.fill((0, 0, 0, 0))
-    screen.fill("#729861")
+    screen.fill(COLOR_FIELD)
 
     # Desenhar a bola
     draw_ball(state.ball, screen)
@@ -106,10 +106,9 @@ def render(state, screen, transparent_surface, name_font, sockname):
     draw_myself(state.players.pop(sockname), screen, transparent_surface)
 
     # Desenhar os outros jogadores
-    for p in state.players.values():
-        playerName = name_font.render(p.name, True, (255, 255, 255))
-        screen.blit(playerName, (p.x - playerName.get_rect().width / 2, p.y + 50))
-        draw_player(p, screen)
+    for player in state.players.values():
+        draw_player(player, screen)
+        draw_name(player, screen, name_font)
 
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
@@ -119,35 +118,59 @@ def render(state, screen, transparent_surface, name_font, sockname):
 def draw_ball(ball, screen):
     x = int(ball.x)
     y = int(ball.y)
-    pygame.gfxdraw.filled_circle(screen, x, y, 30, pygame.Color("black"))
-    pygame.gfxdraw.aacircle(screen, x, y, 30, pygame.Color("black"))
-    pygame.gfxdraw.filled_circle(screen, x, y, 25, pygame.Color("white"))
-    pygame.gfxdraw.aacircle(screen, x, y, 25, pygame.Color("white"))
+
+    border_radius = ball.radius
+    inner_radius = int(ball.radius * 0.84)
+
+    # Desenhar borda
+    pygame.gfxdraw.filled_circle(screen, x, y, border_radius, pygame.Color("black"))
+    pygame.gfxdraw.aacircle(screen, x, y, border_radius, pygame.Color("black"))
+
+    # Desenhar circulo interior
+    pygame.gfxdraw.filled_circle(screen, x, y, inner_radius, pygame.Color("white"))
+    pygame.gfxdraw.aacircle(screen, x, y, inner_radius, pygame.Color("white"))
 
 
-def draw_myself(me, screen, transparent_surface):
-    draw_player(me, screen)
-    x = int(me.x)
-    y = int(me.y)
-    pygame.draw.circle(transparent_surface, pygame.Color(200, 200, 200, 100), (me.x, me.y), 70, 5)
-    pygame.gfxdraw.aacircle(screen, x, y, 65, pygame.Color(200, 200, 200, 100))
-    pygame.gfxdraw.aacircle(screen, x, y, 70, pygame.Color(200, 200, 200, 100))
+def draw_myself(player, screen, transparent_surface):
+    draw_player(player, screen)
+
+    # Obter a posição do jogador
+    pos = x, y = int(player.x), int(player.y)
+
+    # Calcular dimensões do indicador de pontapé
+    inner_radius = round(1.44 * player.radius)
+    outer_radius = round(1.56 * player.radius)
+    thickness = outer_radius - inner_radius
+
+    # Desenhar indicador do alcance de pontapé
+    pygame.draw.circle(transparent_surface, COLOR_KICK_RANGE, pos, outer_radius, thickness)
+    pygame.gfxdraw.aacircle(screen, x, y, inner_radius, COLOR_KICK_RANGE)
+    pygame.gfxdraw.aacircle(screen, x, y, outer_radius, COLOR_KICK_RANGE)
 
 
-def draw_player(p, screen):
-    border_color = pygame.Color("white") if p.kick else pygame.Color("black")
-    inner_color = pygame.Color("#5688e4") if p.team == Team.BLUE else pygame.Color("#e46f56")
+def draw_player(player, screen):
+    border_color = COLOR_BORDER_KICK if player.kick else COLOR_BORDER
+    inner_color = COLOR_PLAYER_BLUE if player.team == Team.BLUE else COLOR_PLAYER_RED
 
-    x = int(p.x)
-    y = int(p.y)
+    # Obter a posição do jogador
+    x = int(player.x)
+    y = int(player.y)
 
-    # Draw the outer border
-    pygame.gfxdraw.filled_circle(screen, x, y, 45, border_color)
-    pygame.gfxdraw.aacircle(screen, x, y, 45, border_color)
+    border_radius = player.radius
+    inner_radius = round(0.9 * player.radius)
 
-    # Draw the inner circle
-    pygame.gfxdraw.filled_circle(screen, x, y, 40, inner_color)
-    pygame.gfxdraw.aacircle(screen, x, y, 40, inner_color)
+    # Desenhar borda
+    pygame.gfxdraw.filled_circle(screen, x, y, border_radius, border_color)
+    pygame.gfxdraw.aacircle(screen, x, y, border_radius, border_color)
+
+    # Desenhar circulo interior
+    pygame.gfxdraw.filled_circle(screen, x, y, inner_radius, inner_color)
+    pygame.gfxdraw.aacircle(screen, x, y, inner_radius, inner_color)
+
+
+def draw_name(player, screen, name_font):
+    playerName = name_font.render(player.name, True, (255, 255, 255))
+    screen.blit(playerName, (player.x - playerName.get_rect().width / 2, player.y + 50))
 
 
 if __name__ == "__main__":

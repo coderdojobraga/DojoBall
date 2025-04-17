@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Tuple
 import math
 from itertools import combinations
 from enum import Enum, auto
@@ -32,18 +32,15 @@ class State:
         for c1, c2 in combinations(self.all_circles(), 2):
             dx = c2.x - c1.x
             dy = c2.y - c1.y
-            dist = dx**2 + dy**2
+            dist = dx ** 2 + dy ** 2
             radius_sum = c1.radius + c2.radius
 
             # Check for overlap
-            if dist < radius_sum**2:
+            if dist < radius_sum ** 2:
                 # Resolve overlap
                 distance = math.sqrt(dist)
-
-                # Normal vector
                 nx = dx / distance
                 ny = dy / distance
-
                 overlap = 0.5 * (distance - radius_sum)
                 c1.x += overlap * nx
                 c1.y += overlap * ny
@@ -64,19 +61,13 @@ class State:
             if player.kick: 
                 dx = self.ball.x - player.x
                 dy = self.ball.y - player.y
-                dist = dx**2 + dy**2
+                dist = dx ** 2 + dy ** 2
 
-                # Check for overlap
-                if dist < (player.radius + self.ball.radius + 20)**2:
-                    # Resolve overlap
+                # Verifica se a bola está dentro do raio de pontapé
+                if dist < (player.radius + self.ball.radius + 20) ** 2:
                     distance = math.sqrt(dist)
-
-                    # Normal vector
-                    nx = dx / distance
-                    ny = dy / distance
-
-                    self.ball.vx += 0.5 * nx
-                    self.ball.vy += 0.5 * ny 
+                    self.ball.vx += 0.5 * dx / distance
+                    self.ball.vy += 0.5 * dy / distance
 
 
     def clear_kicks(self):
@@ -94,16 +85,14 @@ class Circle:
         self.mass: float = 1
         self.drag_coefficient: float = 0.8
 
-    def update_position(self, dt):
-        # print(dt, dt * 60)
-
+    def update_position(self):
         # Update position
-        self.x += self.vx * 5.5 # dt * 350
-        self.y += self.vy * 5.5 # dt * 350
+        self.x += self.vx * 5.5
+        self.y += self.vy * 5.5
 
         # Apply drag 
-        self.vx *= self.drag_coefficient # * dt * 60
-        self.vy *= self.drag_coefficient # * dt * 60
+        self.vx *= self.drag_coefficient
+        self.vy *= self.drag_coefficient
 
         # Wrap around screen
         if self.x < 0:
@@ -116,7 +105,7 @@ class Circle:
             self.y -= SCREEN_HEIGHT
 
         # Clamp velocity near zero
-        if self.vx**2 + self.vy**2 < 0.001:
+        if self.vx ** 2 + self.vy ** 2 < 0.001:
             self.vx = 0
             self.vy = 0
 

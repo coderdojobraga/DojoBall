@@ -26,16 +26,15 @@ running = True
 
 def game_cycle():
     global running
-    dt = 0
 
     while running:
         # print(clock.get_fps())
 
         with state_lock:
             for player in state.players.values():
-                player.update_position(dt)
+                player.update_position()
 
-            state.ball.update_position(dt)
+            state.ball.update_position()
 
             state.handle_collisions()
 
@@ -47,7 +46,7 @@ def game_cycle():
 
             state.clear_kicks()
 
-        dt = clock.tick(60) / 1000.0  # Delta time in seconds
+        clock.tick(60)
 
 
 class GameTCPHandler(socketserver.BaseRequestHandler):
