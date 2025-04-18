@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Hot reload backup files
+.loop_backup
+.loop_error
+
