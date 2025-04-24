@@ -32,7 +32,7 @@ def step(client_socket, screen, transparent_surface, name_font):
     render(state, screen, transparent_surface, name_font, client_socket.getsockname())
 
     return True
-    
+
 
 def send_data(client_socket, data):
     data = pickle.dumps(data)
