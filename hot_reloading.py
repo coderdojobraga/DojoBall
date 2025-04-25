@@ -1,60 +1,60 @@
+import inspect
 import os
 import shutil
 import traceback
-import inspect
 from importlib import reload
+from pygments import highlight
 from pygments.lexers.python import PythonTracebackLexer
 from pygments.formatters import Terminal256Formatter
-from pygments import highlight
 
 
 lexer = PythonTracebackLexer(stripall=True)
 formatter = Terminal256Formatter(style="default")
 
+
 def hot_cycle(fun, *args, **kwargs):
+    prev_e = None
+    error_count = 0
+
     module = inspect.getmodule(fun)
 
-    last_mtime = os.stat("loop.py").st_mtime
-    shutil.copyfile("loop.py", ".loop_backup")
+    MODULE_FILE = module.__file__
+    BACKUP_FILE = f".{module.__name__}_backup"
+    ERROR_FILE = f".{module.__name__}_error"
+
+    last_mtime = os.stat(MODULE_FILE).st_mtime
+    shutil.copyfile(MODULE_FILE, BACKUP_FILE)
 
     running = True
     while running:
-        current_mtime = os.stat("loop.py").st_mtime
+        current_mtime = os.stat(MODULE_FILE).st_mtime
 
         if current_mtime > last_mtime:
             last_mtime = current_mtime
             try:
                 reload(module)
-                print("loop module reloaded")
-                try:
-                    running = fun(*args, **kwargs)
-                    shutil.copyfile("loop.py", ".loop_backup")
-                    continue
-                except Exception as e:
-                    print("Error in reloaded game loop:\n")
-                    print(highlight(traceback.format_exc(), lexer, formatter))
-                    print("Reverting to backup.\n")
-                    shutil.copyfile("loop.py", ".loop_error")
-                    shutil.copyfile(".loop_backup", "loop.py")
-                    reload(module)
-                    shutil.copyfile(".loop_error", "loop.py")
-                    last_mtime = os.stat("loop.py").st_mtime
+                running = fun(*args, **kwargs)
+                print(f"{module.__name__} module reloaded.")
+                shutil.copyfile(MODULE_FILE, BACKUP_FILE)
+                continue
             except Exception as e:
-                print("Error reloading loop module:\n")
+                print(f"Error reloading {module.__name__}:\n")
                 print(highlight(traceback.format_exc(), lexer, formatter))
                 print("Reverting to backup.\n")
+                shutil.copyfile(MODULE_FILE, ERROR_FILE)
+                shutil.copyfile(BACKUP_FILE, MODULE_FILE)
+                reload(module)
+                shutil.copyfile(ERROR_FILE, MODULE_FILE)
+                last_mtime = os.stat(MODULE_FILE).st_mtime
 
         try:
             running = fun(*args, **kwargs)
         except Exception as e:
-            print("Error in game loop:\n")
-            print(highlight(traceback.format_exc(), lexer, formatter))
-
-# if touch
-#   if reload
-#     if run
-#       backup
-#       continue
-#     else
-#       fix
-# run
+            if str(e) == str(prev_e):
+                print(f"\rError count: {error_count} ", end="", flush=True)
+                error_count += 1
+            else:
+                error_count = 1
+                prev_e = e
+                print(f"Error in {module.__name__}.{fun.__name__}:\n")
+                print(highlight(traceback.format_exc(), lexer, formatter))
