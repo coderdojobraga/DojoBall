@@ -6,8 +6,8 @@ from state import Team
 
 
 COLOR_FIELD = pygame.Color("#729861")
-COLOR_PLAYER_BLUE = pygame.Color("#5688e4")
-COLOR_PLAYER_RED = pygame.Color("#e46f56")
+COLOR_TEAM_BLUE = pygame.Color("#5688e4")
+COLOR_TEAM_RED = pygame.Color("#e46f56")
 COLOR_BORDER = pygame.Color("black")
 COLOR_BORDER_KICK = pygame.Color("white")
 COLOR_KICK_RANGE = pygame.Color(200, 200, 200, 100)
@@ -69,6 +69,10 @@ def render(state, screen, transparent_surface, name_font, sockname):
         draw_player(player, screen)
         draw_name(player, screen, name_font)
 
+    # Desenhar postes
+    for post in state.posts:
+        draw_post(screen, post)
+
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
     pygame.display.flip()
@@ -109,7 +113,7 @@ def draw_myself(player, screen, transparent_surface):
 
 def draw_player(player, screen):
     border_color = COLOR_BORDER_KICK if player.kick else COLOR_BORDER
-    inner_color = COLOR_PLAYER_BLUE if player.team == Team.BLUE else COLOR_PLAYER_RED
+    inner_color = COLOR_TEAM_BLUE if player.team == Team.BLUE else COLOR_TEAM_RED
 
     # Obter a posição do jogador
     x = int(player.x)
@@ -130,3 +134,20 @@ def draw_player(player, screen):
 def draw_name(player, screen, name_font):
     playerName = name_font.render(player.name, True, (255, 255, 255))
     screen.blit(playerName, (player.x - playerName.get_rect().width / 2, player.y + 50))
+
+def draw_post(screen, post):
+    inner_color = COLOR_TEAM_BLUE if post.team == Team.BLUE else COLOR_TEAM_RED
+
+    x = int(post.x)
+    y = int(post.y)
+
+    border_radius = int(post.radius)
+    inner_radius = round(0.75 * post.radius)
+
+    # Desenhar borda
+    pygame.gfxdraw.filled_circle(screen, x, y, border_radius, COLOR_BORDER)
+    pygame.gfxdraw.aacircle(screen, x, y, border_radius, COLOR_BORDER)
+
+    # Desenhar circulo interior
+    pygame.gfxdraw.filled_circle(screen, x, y, inner_radius, inner_color)
+    pygame.gfxdraw.aacircle(screen, x, y, inner_radius, inner_color)

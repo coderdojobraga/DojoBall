@@ -1,7 +1,7 @@
-from typing import Dict, Tuple
 import math
-from itertools import combinations
+from itertools import combinations, product
 from enum import Enum, auto
+
 
 SCREEN_WIDTH = 720
 SCREEN_HEIGHT = 720
@@ -17,35 +17,43 @@ class Team(Enum):
 
 class State:
     def __init__(self) -> None:
-        self.players: Dict[Tuple[str, int], Player] = {}
+        self.field_width: int = SCREEN_WIDTH
+        self.field_height: int = SCREEN_HEIGHT
+        self.players: dict[tuple[str, int], Player] = {}
         self.ball: Ball = Ball()
+        self.posts: list[Post] = [
+            Post(Team.RED, 20, SCREEN_HEIGHT / 2 + 80),
+            Post(Team.RED, 20, SCREEN_HEIGHT / 2 - 80),
+            Post(Team.BLUE, SCREEN_WIDTH - 20, SCREEN_HEIGHT / 2 + 80),
+            Post(Team.BLUE, SCREEN_WIDTH - 20, SCREEN_HEIGHT / 2 - 80),
+        ]
 
     def __repr__(self) -> str:
         return f"State({self.players}, {self.ball})"
 
-    def all_circles(self):
+    def moving_circles(self):
         yield from self.players.values()
         yield self.ball
 
     def handle_collisions(self):
         # Could handle collisions between players first and then between players and ball and check if player is kicking
-        for c1, c2 in combinations(self.all_circles(), 2):
+        for c1, c2 in combinations(self.moving_circles(), 2):
             dx = c2.x - c1.x
             dy = c2.y - c1.y
-            dist = dx ** 2 + dy ** 2
+            distance_sqr = dx ** 2 + dy ** 2
             radius_sum = c1.radius + c2.radius
 
             # Check for overlap
-            if dist < radius_sum ** 2:
+            if distance_sqr < radius_sum ** 2:
                 # Resolve overlap
-                distance = math.sqrt(dist)
+                distance = math.sqrt(distance_sqr)
                 nx = dx / distance
                 ny = dy / distance
-                overlap = 0.5 * (distance - radius_sum)
-                c1.x += overlap * nx
-                c1.y += overlap * ny
-                c2.x -= overlap * nx
-                c2.y -= overlap * ny
+                overlap = 0.5 * (radius_sum - distance)
+                c1.x -= overlap * nx
+                c1.y -= overlap * ny
+                c2.x += overlap * nx
+                c2.y += overlap * ny
 
                 # Resolve velocity
                 kx = c1.vx - c2.vx
@@ -55,6 +63,43 @@ class State:
                 c1.vy -= p * c2.mass * ny
                 c2.vx += p * c1.mass * nx
                 c2.vy += p * c1.mass * ny
+
+        # Check for collisions with walls
+        for c in self.moving_circles():
+            if c.x < c.radius:
+                c.x = c.radius
+                c.vx *= -1
+            if c.x >= SCREEN_WIDTH - c.radius:
+                c.x = SCREEN_WIDTH - 1 - c.radius
+                c.vx *= -1
+            if c.y < c.radius:
+                c.y = c.radius
+                c.vy *= -1
+            if c.y >= SCREEN_HEIGHT - c.radius:
+                c.y = SCREEN_HEIGHT - 1 - c.radius
+                c.vy *= -1
+
+        # Check for collisions with posts
+        for c, p in product(self.moving_circles(), self.posts):
+            dx = p.x - c.x
+            dy = p.y - c.y
+            distance_sqr = dx ** 2 + dy ** 2
+            radius_sum = c.radius + p.radius
+
+            # Check for overlap
+            if distance_sqr < radius_sum ** 2:
+                # Resolve overlap
+                distance = math.sqrt(distance_sqr)
+                nx = dx / distance
+                ny = dy / distance
+                overlap = radius_sum - distance
+                c.x -= overlap * nx
+                c.y -= overlap * ny
+
+                # Resolve velocity
+                dp = 2 * (nx * c.vx + ny * c.vy)
+                c.vx -= dp * nx
+                c.vy -= dp * ny
 
     def handle_kicks(self):
         for player in self.players.values():
@@ -68,7 +113,6 @@ class State:
                     distance = math.sqrt(dist)
                     self.ball.vx += 0.5 * dx / distance
                     self.ball.vy += 0.5 * dy / distance
-
 
     def clear_kicks(self):
         for player in self.players.values():
@@ -93,16 +137,6 @@ class Circle:
         # Apply drag 
         self.vx *= self.drag_coefficient
         self.vy *= self.drag_coefficient
-
-        # Wrap around screen
-        if self.x < 0:
-            self.x += SCREEN_WIDTH
-        if self.x >= SCREEN_WIDTH:
-            self.x -= SCREEN_WIDTH
-        if self.y < 0:
-            self.y += SCREEN_HEIGHT
-        if self.y >= SCREEN_HEIGHT:
-            self.y -= SCREEN_HEIGHT
 
         # Clamp velocity near zero
         if self.vx ** 2 + self.vy ** 2 < 0.001:
@@ -140,3 +174,14 @@ class Ball(Circle):
 
     def __repr__(self) -> str:
         return f"Ball({self.x}, {self.y})"
+
+
+class Post(Circle):
+    def __init__(self, team: Team, x: float = 0, y: float = 0, radius: float = 15) -> None:
+        self.team: Team = team
+        self.x: float = x
+        self.y: float = y
+        self.radius: float = radius
+
+    def __repr__(self) -> str:
+        return f"Post({self.x}, {self.y})"
