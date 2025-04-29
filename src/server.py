@@ -2,9 +2,9 @@ import socketserver
 import pygame
 import pickle
 import readline
-import server_loop
-from threading import Condition, Lock, Thread
+import server_loop as loop
 from state import Player, State
+from threading import Condition, Lock, Thread
 from hot_reloading import hot_cycle
 
 
@@ -31,7 +31,7 @@ def game_cycle():
     global running
     global last_state_pickle
 
-    hot_cycle(server_loop.step, state, clock, inputs, state_lock, send_cond, last_state_pickle)
+    hot_cycle(loop.step, state, clock, inputs, state_lock, send_cond, last_state_pickle)
 
 
 class GameTCPHandler(socketserver.BaseRequestHandler):

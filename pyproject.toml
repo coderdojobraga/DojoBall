@@ -1,0 +1,9 @@
+[project]
+name = "dojoball"
+version = "0.1.0"
+description = "An Haxball clone for CoderDojo."
+authors = ["Carlos Ferreira carloshsf3899@gmail.com"]
+license = "GPL-3.0-or-later"
+dependencies = [
+    "pygame>2.6.0"
+]

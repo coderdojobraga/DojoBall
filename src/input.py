@@ -5,6 +5,3 @@ class Input:
         self.left: bool = left
         self.right: bool = right
         self.kick: bool = kick
-
-    def __repr__(self) -> str:
-        return f"Input(up={self.up}, down={self.down}, left={self.left}, right={self.right}, kick={self.kick})"
