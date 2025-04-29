@@ -11,9 +11,10 @@ def moving_circles(state):
     yield from state.players.values()
     yield state.ball
 
+
 def handle_collisions(state):
     # Could handle collisions between players first and then between players and ball and check if player is kicking
-    for c1, c2 in combinations(state.moving_circles(), 2):
+    for c1, c2 in combinations(moving_circles(state), 2):
         dx = c2.x - c1.x
         dy = c2.y - c1.y
         distance_sqr = dx ** 2 + dy ** 2
@@ -56,7 +57,7 @@ def handle_collisions(state):
             c.vy *= -1
 
     # Check for collisions with posts
-    for c, p in product(state.moving_circles(), state.posts):
+    for c, p in product(moving_circles(state), state.posts):
         dx = p.x - c.x
         dy = p.y - c.y
         distance_sqr = dx ** 2 + dy ** 2
@@ -77,6 +78,7 @@ def handle_collisions(state):
             c.vx -= dp * nx
             c.vy -= dp * ny
 
+
 def handle_kicks(state):
     for player in state.players.values():
         if player.kick: 
@@ -90,9 +92,11 @@ def handle_kicks(state):
                 state.ball.vx += 0.5 * dx / distance
                 state.ball.vy += 0.5 * dy / distance
 
+
 def clear_kicks(state):
     for player in state.players.values():
         player.kick = False
+
 
 def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
     with state_lock:
@@ -101,10 +105,8 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
                 apply_input(player, inputs[address])
                 del inputs[address]
 
-        for player in state.players.values():
-            update_position(player)
-
-        update_position(state.ball)
+        for circle in moving_circles(state):
+            update_position(circle)
 
         handle_collisions(state)
 
@@ -119,7 +121,6 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
         clear_kicks(state)
 
     clock.tick(60)
-
 
     return True
 

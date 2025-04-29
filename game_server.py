@@ -1,6 +1,7 @@
 import socketserver
 import pygame
 import pickle
+import readline
 import server_loop
 from threading import Condition, Lock, Thread
 from state import Player, State
@@ -83,8 +84,7 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
             with send_cond:
                 send_cond.wait()
                 self.request.sendall(last_state_pickle)
-                # data = pickle.dumps(state)
-                # self.request.sendall(len(data).to_bytes(4, "big") + data)
+
 
     def finish(self):
         print(f"{state.players[self.client_address].name} left")
@@ -96,12 +96,22 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                 del state.players[self.client_address]
 
 
+def interpreter():
+    while True:
+        line = input(">>> ")
+        exec(line)
+
+
 if __name__ == "__main__":
     game_cycle_thread = Thread(target=game_cycle, daemon=True)
     game_cycle_thread.start()
+
+    interpreter_thread = Thread(target=interpreter, daemon=True)
+    interpreter_thread.start()
 
     with socketserver.ThreadingTCPServer(('0.0.0.0', 12345), GameTCPHandler) as server:
         print("Server started, waiting for messages...")
         server.serve_forever()
 
     game_cycle_thread.join()
+    interpreter_thread.join()
