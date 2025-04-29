@@ -1,15 +1,15 @@
 import socketserver
 import pygame
 import pickle
-import math
-from threading import Lock, Thread
+import server_loop
+from threading import Condition, Lock, Thread
 from state import Player, State
+from hot_reloading import hot_cycle
 
 
 pygame.init()  # Ensure pygame is initialized
 
 clock = pygame.time.Clock()
-clock1 = pygame.time.Clock()
 
 state = State()
 state.ball.x = 400
@@ -19,34 +19,18 @@ state_lock = Lock()  # Lock to ensure thread-safe access to shared state
 SCREEN_WIDTH = 720
 SCREEN_HEIGHT = 720
 
+last_state_pickle = bytearray()
 clients = []
-
+inputs = {}
 running = True
+send_cond = Condition()
 
 
 def game_cycle():
     global running
+    global last_state_pickle
 
-    while running:
-        # print(clock.get_fps())
-
-        with state_lock:
-            for player in state.players.values():
-                player.update_position()
-
-            state.ball.update_position()
-
-            state.handle_collisions()
-
-            state.handle_kicks()
-
-            data = pickle.dumps(state)
-            for client in clients:
-                client.sendall(len(data).to_bytes(4, "big") + data)
-
-            state.clear_kicks()
-
-        clock.tick(60)
+    hot_cycle(server_loop.step, state, clock, inputs, state_lock, send_cond, last_state_pickle)
 
 
 class GameTCPHandler(socketserver.BaseRequestHandler):
@@ -80,7 +64,6 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
 
             clients.append(self.request)
 
-
     def handle(self):
         while True:
             # Receive player's input
@@ -95,35 +78,13 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
 
             input = pickle.loads(data)
 
-            x = (-1 if input.left else 0) + (1 if input.right else 0)
-            y = (-1 if input.up else 0) + (1 if input.down else 0)
+            inputs[self.client_address] = input
 
-            if x or y:
-                move_magnitude = math.sqrt(x ** 2 + y ** 2)
-                mx = x / move_magnitude
-                my = y / move_magnitude
-
-                with state_lock:
-                    p = state.players[self.client_address]
-
-                    if input.kick:
-                        p.vx += 0.05 * 0.7 * mx
-                        p.vy += 0.05 * 0.7 * my
-                    else:
-                        p.vx += 0.05 * mx
-                        p.vy += 0.05 * my
-
-                    # Normalize velocity to ensure norm is 1
-                    magnitude = math.sqrt(p.vx ** 2 + p.vy ** 2)
-                    if magnitude > 1:
-                        p.vx /= magnitude
-                        p.vy /= magnitude
-
-            if input.kick:
-                with state_lock:
-                    p = state.players[self.client_address]
-                    p.kick = True
-
+            with send_cond:
+                send_cond.wait()
+                self.request.sendall(last_state_pickle)
+                # data = pickle.dumps(state)
+                # self.request.sendall(len(data).to_bytes(4, "big") + data)
 
     def finish(self):
         print(f"{state.players[self.client_address].name} left")

@@ -1,4 +1,5 @@
 import math
+import pickle
 from itertools import combinations, product
 from enum import Enum, auto
 
@@ -118,6 +119,34 @@ class State:
         for player in self.players.values():
             player.kick = False
 
+    def step(self, clock, inputs, state_lock, send_cond, last_state_pickle):
+        with state_lock:
+            for address, player in self.players.items():
+                if address in inputs:
+                    player.apply_input(inputs[address])
+                    del inputs[address]
+
+            for player in self.players.values():
+                player.update_position()
+
+            self.ball.update_position()
+
+            self.handle_collisions()
+
+            self.handle_kicks()
+
+            data = pickle.dumps(self)
+            last_state_pickle[:] = len(data).to_bytes(4, "big") + data
+
+            with send_cond:
+                send_cond.notify_all()
+
+            self.clear_kicks()
+
+        clock.tick(60)
+
+        return True
+
 
 class Circle:
     def __init__(self, x: float = 0, y: float = 0, vx: float = 0, vy: float = 0, radius: float = 0) -> None:
@@ -157,6 +186,32 @@ class Player(Circle):
         self.kick: bool = False
         self.team: Team = team
         # self.kick_power: float = 0.5
+
+    def apply_input(self, input) -> None:
+        x = (-1 if input.left else 0) + (1 if input.right else 0)
+        y = (-1 if input.up else 0) + (1 if input.down else 0)
+
+        if x or y:
+            move_magnitude = math.sqrt(x ** 2 + y ** 2)
+            mx = x / move_magnitude
+            my = y / move_magnitude
+
+            if input.kick:
+                self.vx += 0.05 * 0.7 * mx
+                self.vy += 0.05 * 0.7 * my
+            else:
+                self.vx += 0.05 * mx
+                self.vy += 0.05 * my
+
+            # Normalize velocity to ensure norm is 1
+            magnitude = math.sqrt(self.vx ** 2 + self.vy ** 2)
+            if magnitude > 1:
+                self.vx /= magnitude
+                self.vy /= magnitude
+
+        if input.kick:
+            self.kick = True
+
 
     def __repr__(self) -> str:
         return f"Player({self.x}, {self.y})"

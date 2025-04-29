@@ -82,7 +82,7 @@ def draw_ball(ball, screen):
     x = int(ball.x)
     y = int(ball.y)
 
-    border_radius = ball.radius
+    border_radius = round(ball.radius)
     inner_radius = int(ball.radius * 0.84)
 
     # Desenhar borda

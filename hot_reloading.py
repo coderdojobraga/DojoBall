@@ -25,6 +25,8 @@ def hot_cycle(fun, *args, **kwargs):
     last_mtime = os.stat(MODULE_FILE).st_mtime
     shutil.copyfile(MODULE_FILE, BACKUP_FILE)
 
+    fun_backup = fun
+
     running = True
     while running:
         current_mtime = os.stat(MODULE_FILE).st_mtime
@@ -33,6 +35,8 @@ def hot_cycle(fun, *args, **kwargs):
             last_mtime = current_mtime
             try:
                 reload(module)
+                fun_backup = fun
+                fun = module.__dict__[fun.__name__]
                 running = fun(*args, **kwargs)
                 print(f"{module.__name__} module reloaded.")
                 shutil.copyfile(MODULE_FILE, BACKUP_FILE)
@@ -46,6 +50,7 @@ def hot_cycle(fun, *args, **kwargs):
                 reload(module)
                 shutil.copyfile(ERROR_FILE, MODULE_FILE)
                 last_mtime = os.stat(MODULE_FILE).st_mtime
+                fun = fun_backup
 
         try:
             running = fun(*args, **kwargs)
