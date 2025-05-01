@@ -50,7 +50,13 @@ def receive_data(client_socket):
 
 
 def get_input(keys):
-    return Input(keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_SPACE])
+    return Input(
+        keys[pygame.K_w],
+        keys[pygame.K_s],
+        keys[pygame.K_a],
+        keys[pygame.K_d],
+        keys[pygame.K_SPACE],
+    )
 
 
 def render(state, screen, transparent_surface, name_font, sockname):
@@ -70,8 +76,10 @@ def render(state, screen, transparent_surface, name_font, sockname):
         draw_name(player, screen, name_font)
 
     # Desenhar postes
-    for post in state.posts:
+    for post in state.posts.values():
         draw_post(screen, post)
+
+    draw_scoreboard(state, screen)
 
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
@@ -106,7 +114,9 @@ def draw_myself(player, screen, transparent_surface):
     thickness = outer_radius - inner_radius
 
     # Desenhar indicador do alcance de pontapé
-    pygame.draw.circle(transparent_surface, COLOR_KICK_RANGE, pos, outer_radius, thickness)
+    pygame.draw.circle(
+        transparent_surface, COLOR_KICK_RANGE, pos, outer_radius, thickness
+    )
     pygame.gfxdraw.aacircle(screen, x, y, inner_radius, COLOR_KICK_RANGE)
     pygame.gfxdraw.aacircle(screen, x, y, outer_radius, COLOR_KICK_RANGE)
 
@@ -135,6 +145,7 @@ def draw_name(player, screen, name_font):
     playerName = name_font.render(player.name, True, (255, 255, 255))
     screen.blit(playerName, (player.x - playerName.get_rect().width / 2, player.y + 50))
 
+
 def draw_post(screen, post):
     inner_color = COLOR_TEAM_BLUE if post.team == Team.BLUE else COLOR_TEAM_RED
 
@@ -151,3 +162,16 @@ def draw_post(screen, post):
     # Desenhar circulo interior
     pygame.gfxdraw.filled_circle(screen, x, y, inner_radius, inner_color)
     pygame.gfxdraw.aacircle(screen, x, y, inner_radius, inner_color)
+
+
+def draw_scoreboard(state, screen):
+    font = pygame.font.SysFont("arial", 30)
+    red_score_text = font.render(
+        f"Blue: {state.score_red}", True, pygame.Color("white")
+    )
+    blue_score_text = font.render(
+        f"Red: {state.score_blue}", True, pygame.Color("white")
+    )
+
+    screen.blit(blue_score_text, (50, 50))
+    screen.blit(red_score_text, (1080 - blue_score_text.get_width() - 50, 50))

@@ -85,7 +85,6 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                 send_cond.wait()
                 self.request.sendall(last_state_pickle)
 
-
     def finish(self):
         print(f"{state.players[self.client_address].name} left")
         with state_lock:
@@ -109,7 +108,7 @@ if __name__ == "__main__":
     interpreter_thread = Thread(target=interpreter, daemon=True)
     interpreter_thread.start()
 
-    with socketserver.ThreadingTCPServer(('0.0.0.0', 12345), GameTCPHandler) as server:
+    with socketserver.ThreadingTCPServer(("0.0.0.0", 12345), GameTCPHandler) as server:
         print("Server started, waiting for messages...")
         server.serve_forever()
 

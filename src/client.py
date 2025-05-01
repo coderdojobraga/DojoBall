@@ -15,9 +15,22 @@ formatter = Terminal256Formatter(style="default")
 
 def main():
     parser = argparse.ArgumentParser(description="Haxball Game Client")
-    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode with hot reloading.")
-    parser.add_argument("-H", "--host", type=str, default="127.0.0.1", help="Server IP address (default: 127.0.0.1)")
-    parser.add_argument("-p", "--port", type=int, default=12345, help="Server port (default: 12345)")
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Enable debug mode with hot reloading.",
+    )
+    parser.add_argument(
+        "-H",
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Server IP address (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "-p", "--port", type=int, default=12345, help="Server port (default: 12345)"
+    )
     args = parser.parse_args()
 
     debug: bool = args.debug
@@ -55,9 +68,9 @@ def main():
     pygame.init()
 
     # Pygame setup
-    screen = pygame.display.set_mode((720, 720))
+    screen = pygame.display.set_mode((1080, 720))
     name_font = pygame.font.SysFont("arial", 30)
-    transparent_surface = pygame.Surface((720, 720), pygame.SRCALPHA)
+    transparent_surface = pygame.Surface((1080, 720), pygame.SRCALPHA)
 
     if debug:
         # Debug mode
