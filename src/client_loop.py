@@ -36,12 +36,12 @@ def step(client_socket, screen, transparent_surface, name_font):
 
 def send_data(client_socket, data):
     data = pickle.dumps(data)
-    data = len(data).to_bytes(4, "big") + data
+    data = len(data).to_bytes(4) + data
     client_socket.sendall(data)
 
 
 def receive_data(client_socket):
-    size = int.from_bytes(client_socket.recv(4), "big")
+    size = int.from_bytes(client_socket.recv(4))
     data = bytearray()
     while len(data) < size:
         chunk = client_socket.recv(size - len(data))

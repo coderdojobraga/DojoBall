@@ -4,13 +4,7 @@ import socket
 import client_loop as loop
 from client_loop import send_data
 from state import Team
-from pygments.lexers.python import PythonTracebackLexer
-from pygments.formatters import Terminal256Formatter
 from hot_reloading import hot_cycle
-
-
-lexer = PythonTracebackLexer(stripall=True)
-formatter = Terminal256Formatter(style="default")
 
 
 def main():
