@@ -10,10 +10,17 @@ def moving_circles(state):
 
 
 def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
+    # Track previous input for edge-triggered kick
+    if not hasattr(step, "prev_inputs"):
+        step.prev_inputs = {}
+    prev_inputs = step.prev_inputs
     with state_lock:
         for address, player in state.players.items():
             if address in inputs:
-                apply_input(player, inputs[address])
+                prev_input = prev_inputs.get(address)
+                curr_input = inputs[address]
+                apply_input(player, curr_input, prev_input)
+                prev_inputs[address] = curr_input
                 del inputs[address]
 
         for circle in moving_circles(state):
@@ -107,16 +114,20 @@ def handle_collisions(state):
 
 def handle_kicks(state):
     for player in state.players.values():
-        if player.kick:
+        if player.kick and not player.kick_locked:
+            print("[LOG] Entering kick state")
             dx = state.ball.x - player.x
             dy = state.ball.y - player.y
             dist = dx**2 + dy**2
 
             # Verifica se a bola está dentro do raio de pontapé
+            print("[LOG] Dist:", dist, (player.radius + state.ball.radius + 20) ** 2)
             if dist < (player.radius + state.ball.radius + 20) ** 2:
                 distance = math.sqrt(dist)
+                print("[LOG] Kick: ", distance)
                 state.ball.vx += 0.5 * dx / distance
                 state.ball.vy += 0.5 * dy / distance
+                player.kick_locked = True
 
 
 def clear_kicks(state):
@@ -139,7 +150,7 @@ def update_position(circle):
         circle.vy = 0
 
 
-def apply_input(player, input) -> None:
+def apply_input(player, input, prev_input=None) -> None:
     x = (-1 if input.left else 0) + (1 if input.right else 0)
     y = (-1 if input.up else 0) + (1 if input.down else 0)
 
@@ -161,8 +172,11 @@ def apply_input(player, input) -> None:
             player.vx /= magnitude
             player.vy /= magnitude
 
-    if input.kick:
-        player.kick = True
+    # Permite pressionar espaço livremente, só faz lock após chute
+    if not input.kick:
+        player.kick_locked = False
+    # player.kick só é True se não estiver locked
+    player.kick = input.kick and not player.kick_locked
 
 
 def check_goal(state):

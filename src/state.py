@@ -63,6 +63,7 @@ class Player(Circle):
         self.team: Team = team
         self.drag_coefficient: float = 0.96
         self.kick: bool = False
+        self.kick_locked: bool = False
         # self.kick_power: float = 0.5
 
 
