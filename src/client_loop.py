@@ -180,5 +180,5 @@ def draw_scoreboard(state, screen):
 
 def draw_timer(timer, screen):
     font = pygame.font.SysFont("arial", 30)
-    timer_text = font.render(f"{timer // 60}:{timer % 60:02d}", True, pygame.Color("white"))
+    timer_text = font.render(f"{timer // 60:02d}:{timer % 60:02d}", True, pygame.Color("white"))
     screen.blit(timer_text, (540 - timer_text.get_width() // 2, 50))
