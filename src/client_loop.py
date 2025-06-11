@@ -81,6 +81,8 @@ def render(state, screen, transparent_surface, name_font, sockname):
 
     draw_scoreboard(state, screen)
 
+    draw_timer(state.timer, screen)
+
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
     pygame.display.flip()
@@ -175,3 +177,8 @@ def draw_scoreboard(state, screen):
 
     screen.blit(blue_score_text, (50, 50))
     screen.blit(red_score_text, (1080 - blue_score_text.get_width() - 50, 50))
+
+def draw_timer(timer, screen):
+    font = pygame.font.SysFont("arial", 30)
+    timer_text = font.render(f"{timer // 60}:{timer % 60:02d}", True, pygame.Color("white"))
+    screen.blit(timer_text, (540 - timer_text.get_width() // 2, 50))

@@ -1,5 +1,6 @@
 import math
 import pickle
+import pygame
 from itertools import combinations, product
 from state import SCREEN_HEIGHT, SCREEN_WIDTH
 
@@ -24,6 +25,8 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
         handle_kicks(state)
 
         check_goal(state)
+
+        state.timer = pygame.time.get_ticks() // 1000
 
         data = pickle.dumps(state)
         last_state_pickle[:] = len(data).to_bytes(4, "big") + data
