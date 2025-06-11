@@ -27,6 +27,7 @@ class State:
         }
         self.score_red: int = 0
         self.score_blue: int = 0
+        self.timer = 0
 
 
 class Circle:
