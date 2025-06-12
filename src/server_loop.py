@@ -173,15 +173,15 @@ def check_goal(state):
         state.ball.x < state.posts["tl"].x
         and state.posts["bl"].y < state.ball.y < state.posts["tl"].y
     ):
-        # Red team scores
-        state.score_red += 1
+        # Blue team scores
+        state.score_blue += 1
         reset_ball(state)
     elif (
         state.ball.x > state.posts["tr"].x
         and state.posts["br"].y < state.ball.y < state.posts["tr"].y
     ):
-        # Blue team scores
-        state.score_blue += 1
+        # Red team scores
+        state.score_red += 1
         reset_ball(state)
 
 
