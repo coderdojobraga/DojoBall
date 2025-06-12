@@ -79,9 +79,7 @@ def render(state, screen, transparent_surface, name_font, sockname):
     for post in state.posts.values():
         draw_post(screen, post)
 
-    draw_scoreboard(state, screen)
-
-    draw_timer(state.timer, screen)
+    draw_hud(screen, state)
 
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
@@ -166,19 +164,81 @@ def draw_post(screen, post):
     pygame.gfxdraw.aacircle(screen, x, y, inner_radius, inner_color)
 
 
-def draw_scoreboard(state, screen):
-    font = pygame.font.SysFont("arial", 30)
-    red_score_text = font.render(
-        f"Blue: {state.score_red}", True, pygame.Color("white")
-    )
-    blue_score_text = font.render(
-        f"Red: {state.score_blue}", True, pygame.Color("white")
-    )
+def draw_hud(screen, state):
+    font = pygame.font.SysFont(["Arial Black", "Arial Bold", "Gadget", "sans-serif"], 33, bold=False)
 
-    screen.blit(blue_score_text, (50, 50))
-    screen.blit(red_score_text, (1080 - blue_score_text.get_width() - 50, 50))
+    # Cores
+    font_color = pygame.Color("#fefeff")
+    hud_background_color = pygame.Color("#1b2025")
 
-def draw_timer(timer, screen):
-    font = pygame.font.SysFont("arial", 30)
-    timer_text = font.render(f"{timer // 60:02d}:{timer % 60:02d}", True, pygame.Color("white"))
-    screen.blit(timer_text, (540 - timer_text.get_width() // 2, 50))
+    # Dimensões
+    border_radius = 5
+    team_rect_size = 23
+    score_width = 35
+    hyphen_width = 7
+    colon_width = 7
+    hud_height = 35
+    hud_width = 443
+    hud_padding = 5
+    clock_digit_width = 15
+
+    # Posições de ancoragem
+    hud_pos_x = round((screen.get_width() - hud_width) / 2)
+    hud_pos_y = 0
+    team_rect_pos_y = round((hud_height - team_rect_size) / 2)
+    font_pos_y = round((hud_height - font.get_height()) / 2) + 2
+    clock_end = hud_pos_x + hud_width - hud_padding
+
+    # Desenhar fundo do HUD
+    hud_background = pygame.Rect(hud_pos_x, hud_pos_y, hud_width, hud_height)
+    pygame.draw.rect(screen, hud_background_color, hud_background, border_bottom_left_radius=border_radius, border_bottom_right_radius=border_radius)
+
+    # Desenhar retângulo da equipa vermelha
+    red_rect_pos = hud_pos_x + hud_padding
+    red_rect = pygame.Rect(red_rect_pos, team_rect_pos_y, team_rect_size, team_rect_size)
+    pygame.draw.rect(screen, COLOR_TEAM_RED, red_rect, border_radius=border_radius)
+
+    # Desenhar pontuação da equipa vermelha
+    score_red = font.render(f"{state.score_red}", True, font_color)
+    score_red_pos = red_rect_pos + team_rect_size
+    screen.blit(score_red, (score_red_pos + round((score_width - score_red.get_width()) / 2), font_pos_y))
+
+    # Desenhar hífen entre pontuações
+    score_hyphen = font.render("-", True, font_color)
+    score_hyphen_pos = score_red_pos + score_width + round((hyphen_width - score_hyphen.get_width()) / 2)
+    screen.blit(score_hyphen, (score_hyphen_pos, font_pos_y))
+
+    # Desenhar pontuação da equipa azul
+    score_blue = font.render(f"{state.score_blue}", True, font_color)
+    score_blue_pos = score_red_pos + score_width + hyphen_width
+    screen.blit(score_blue, (score_blue_pos + round((score_width - score_blue.get_width()) / 2), font_pos_y))
+
+    # Desenhar retângulo da equipa azul
+    blue_rect_pos = score_blue_pos + score_width
+    blue_rect = pygame.Rect(blue_rect_pos, team_rect_pos_y, team_rect_size, team_rect_size)
+    pygame.draw.rect(screen, COLOR_TEAM_BLUE, blue_rect, border_radius=border_radius)
+
+    # Desenhar unidade dos segundos do relógio
+    clock_sec_ones = font.render(f"{state.clock % 60 % 10}", True, font_color)
+    clock_sec_ones_pos = clock_end - clock_digit_width
+    screen.blit(clock_sec_ones, (clock_sec_ones_pos + round((clock_digit_width - clock_sec_ones.get_width()) / 2), font_pos_y))
+
+    # Desenhar dezenas dos segundos do relógio
+    clock_sec_tens = font.render(f"{state.clock % 60 // 10}", True, font_color)
+    clock_sec_tens_pos = clock_sec_ones_pos - clock_digit_width
+    screen.blit(clock_sec_tens, (clock_sec_tens_pos + round((clock_digit_width - clock_sec_tens.get_width()) / 2), font_pos_y))
+
+    # Desenhar dois pontos do relógio
+    clock_colon = font.render(":", True, font_color)
+    clock_colon_pos = clock_sec_tens_pos - colon_width
+    screen.blit(clock_colon, (clock_colon_pos + round((colon_width - clock_colon.get_width()) / 2), font_pos_y))
+
+    # Desenhar unidade dos minutos do relógio
+    clock_min_ones = font.render(f"{state.clock // 60 % 10}", True, font_color)
+    clock_min_ones_pos = clock_colon_pos - clock_digit_width
+    screen.blit(clock_min_ones, (clock_min_ones_pos + round((clock_digit_width - clock_min_ones.get_width()) / 2), font_pos_y))
+
+    # Desenhar dezenas dos minutos do relógio
+    clock_min_tens = font.render(f"{state.clock // 600}", True, font_color)
+    clock_min_tens_pos = clock_min_ones_pos - clock_digit_width
+    screen.blit(clock_min_tens, (clock_min_tens_pos + round((clock_digit_width - clock_min_tens.get_width()) / 2), font_pos_y))

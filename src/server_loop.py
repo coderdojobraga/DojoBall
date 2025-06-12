@@ -26,7 +26,7 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
 
         check_goal(state)
 
-        state.timer = pygame.time.get_ticks() // 1000
+        state.clock = pygame.time.get_ticks() // 1000
 
         data = pickle.dumps(state)
         last_state_pickle[:] = len(data).to_bytes(4, "big") + data
@@ -173,15 +173,15 @@ def check_goal(state):
         state.ball.x < state.posts["tl"].x
         and state.posts["bl"].y < state.ball.y < state.posts["tl"].y
     ):
-        # Red team scores
-        state.score_red += 1
+        # Blue team scores
+        state.score_blue += 1
         reset_ball(state)
     elif (
         state.ball.x > state.posts["tr"].x
         and state.posts["br"].y < state.ball.y < state.posts["tr"].y
     ):
-        # Blue team scores
-        state.score_blue += 1
+        # Red team scores
+        state.score_red += 1
         reset_ball(state)
 
 
