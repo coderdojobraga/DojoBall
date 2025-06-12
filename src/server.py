@@ -4,7 +4,7 @@ import pygame
 import pickle
 import readline
 import server_loop as loop
-from state import Player, State
+from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, Team
 from threading import Condition, Lock, Thread
 from hot_reloading import hot_cycle
 
@@ -39,8 +39,8 @@ def main():
 
     clock = pygame.time.Clock()
 
-    state.ball.x = 400
-    state.ball.y = 400
+    state.ball.x = SCREEN_WIDTH / 2
+    state.ball.y = SCREEN_HEIGHT / 2
 
     game_cycle_thread = Thread(
         target=game_cycle,
@@ -106,7 +106,10 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
         with state_lock:
             # Initialize position for new player
             if self.client_address not in state.players:
-                state.players[self.client_address] = Player(name, team, 360, 360)
+                if team == Team.RED:
+                    state.players[self.client_address] = Player(name, team, 45, SCREEN_HEIGHT / 2)
+                else:
+                    state.players[self.client_address] = Player(name, team, SCREEN_WIDTH - 45, SCREEN_HEIGHT / 2)
 
             clients.append(self.request)
 
