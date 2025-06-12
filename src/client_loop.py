@@ -175,18 +175,18 @@ def draw_hud(screen, state):
     border_radius = 5
     team_rect_size = 23
     score_width = 35
-    hyphen_width = 6.67
-    colon_width = 6.67
+    hyphen_width = 7
+    colon_width = 7
     hud_height = 35
-    hud_width = 442.73
+    hud_width = 443
     hud_padding = 5
     clock_digit_width = 15
 
     # Posições de ancoragem
-    hud_pos_x = (screen.get_width() - hud_width) / 2
+    hud_pos_x = round((screen.get_width() - hud_width) / 2)
     hud_pos_y = 0
-    team_rect_pos_y = (hud_height - team_rect_size) / 2
-    font_pos_y = (hud_height - font.get_height()) / 2 + 2
+    team_rect_pos_y = round((hud_height - team_rect_size) / 2)
+    font_pos_y = round((hud_height - font.get_height()) / 2) + 2
     clock_end = hud_pos_x + hud_width - hud_padding
 
     # Desenhar fundo do HUD
@@ -201,17 +201,17 @@ def draw_hud(screen, state):
     # Desenhar pontuação da equipa vermelha
     score_red = font.render(f"{state.score_red}", True, font_color)
     score_red_pos = red_rect_pos + team_rect_size
-    screen.blit(score_red, (score_red_pos + (score_width - score_red.get_width()) / 2, font_pos_y))
+    screen.blit(score_red, (score_red_pos + round((score_width - score_red.get_width()) / 2), font_pos_y))
 
     # Desenhar hífen entre pontuações
     score_hyphen = font.render("-", True, font_color)
-    score_hyphen_pos = score_red_pos + score_width + (hyphen_width - score_hyphen.get_width()) / 2
+    score_hyphen_pos = score_red_pos + score_width + round((hyphen_width - score_hyphen.get_width()) / 2)
     screen.blit(score_hyphen, (score_hyphen_pos, font_pos_y))
 
     # Desenhar pontuação da equipa azul
     score_blue = font.render(f"{state.score_blue}", True, font_color)
     score_blue_pos = score_red_pos + score_width + hyphen_width
-    screen.blit(score_blue, (score_blue_pos + (score_width - score_blue.get_width()) / 2, font_pos_y))
+    screen.blit(score_blue, (score_blue_pos + round((score_width - score_blue.get_width()) / 2), font_pos_y))
 
     # Desenhar retângulo da equipa azul
     blue_rect_pos = score_blue_pos + score_width
@@ -221,24 +221,24 @@ def draw_hud(screen, state):
     # Desenhar unidade dos segundos do relógio
     clock_sec_ones = font.render(f"{state.clock % 60 % 10}", True, font_color)
     clock_sec_ones_pos = clock_end - clock_digit_width
-    screen.blit(clock_sec_ones, (clock_sec_ones_pos + (clock_digit_width - clock_sec_ones.get_width()) / 2, font_pos_y))
+    screen.blit(clock_sec_ones, (clock_sec_ones_pos + round((clock_digit_width - clock_sec_ones.get_width()) / 2), font_pos_y))
 
     # Desenhar dezenas dos segundos do relógio
     clock_sec_tens = font.render(f"{state.clock % 60 // 10}", True, font_color)
     clock_sec_tens_pos = clock_sec_ones_pos - clock_digit_width
-    screen.blit(clock_sec_tens, (clock_sec_tens_pos + (clock_digit_width - clock_sec_tens.get_width()) / 2, font_pos_y))
+    screen.blit(clock_sec_tens, (clock_sec_tens_pos + round((clock_digit_width - clock_sec_tens.get_width()) / 2), font_pos_y))
 
     # Desenhar dois pontos do relógio
     clock_colon = font.render(":", True, font_color)
     clock_colon_pos = clock_sec_tens_pos - colon_width
-    screen.blit(clock_colon, (clock_colon_pos + (colon_width - clock_colon.get_width()) / 2, font_pos_y))
+    screen.blit(clock_colon, (clock_colon_pos + round((colon_width - clock_colon.get_width()) / 2), font_pos_y))
 
     # Desenhar unidade dos minutos do relógio
     clock_min_ones = font.render(f"{state.clock // 60 % 10}", True, font_color)
     clock_min_ones_pos = clock_colon_pos - clock_digit_width
-    screen.blit(clock_min_ones, (clock_min_ones_pos + (clock_digit_width - clock_min_ones.get_width()) / 2, font_pos_y))
+    screen.blit(clock_min_ones, (clock_min_ones_pos + round((clock_digit_width - clock_min_ones.get_width()) / 2), font_pos_y))
 
     # Desenhar dezenas dos minutos do relógio
     clock_min_tens = font.render(f"{state.clock // 600}", True, font_color)
     clock_min_tens_pos = clock_min_ones_pos - clock_digit_width
-    screen.blit(clock_min_tens, (clock_min_tens_pos + (clock_digit_width - clock_min_tens.get_width()) / 2, font_pos_y))
+    screen.blit(clock_min_tens, (clock_min_tens_pos + round((clock_digit_width - clock_min_tens.get_width()) / 2), font_pos_y))
