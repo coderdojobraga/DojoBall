@@ -165,7 +165,7 @@ def draw_post(screen, post):
 
 
 def draw_hud(screen, state):
-    font = pygame.font.SysFont(["Arial Black", "Arial Bold", "Gadget", "sans-serif"], 33, bold=True)
+    font = pygame.font.SysFont(["Arial Black", "Arial Bold", "Gadget", "sans-serif"], 33, bold=False)
 
     # Cores
     font_color = pygame.Color("#fefeff")
