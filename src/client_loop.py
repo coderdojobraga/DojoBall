@@ -165,7 +165,7 @@ def draw_post(screen, post):
 
 
 def draw_hud(screen, state):
-    font = pygame.font.SysFont("Arial Bold", 33)
+    font = pygame.font.SysFont(["Arial Black", "Arial Bold", "Gadget", "sans-serif"], 33, bold=True)
 
     border_radius = 5
     team_rect_size = 23
