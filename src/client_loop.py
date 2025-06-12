@@ -225,11 +225,11 @@ def draw_hud(screen, state):
 
     clock_sec_ones_pos_end = hud_pos_end_x - hud_padding
 
-    clock_sec_ones = font.render(f"{state.timer % 60 % 10}", True, pygame.Color("white"))
+    clock_sec_ones = font.render(f"{state.clock % 60 % 10}", True, pygame.Color("white"))
     clock_sec_ones_pos = clock_sec_ones_pos_end - clock_digit_width
     screen.blit(clock_sec_ones, (clock_sec_ones_pos + (clock_digit_width - clock_sec_ones.get_width()) / 2, font_pos_y))
 
-    clock_sec_tens = font.render(f"{state.timer % 60 // 10}", True, pygame.Color("white"))
+    clock_sec_tens = font.render(f"{state.clock % 60 // 10}", True, pygame.Color("white"))
     clock_sec_tens_pos = clock_sec_ones_pos - clock_digit_width
     screen.blit(clock_sec_tens, (clock_sec_tens_pos + (clock_digit_width - clock_sec_tens.get_width()) / 2, font_pos_y))
 
@@ -237,10 +237,10 @@ def draw_hud(screen, state):
     clock_colon_pos = clock_sec_tens_pos - colon_width
     screen.blit(clock_colon, (clock_colon_pos + (colon_width - clock_colon.get_width()) / 2, font_pos_y))
 
-    clock_min_ones = font.render(f"{state.timer // 60 % 10}", True, pygame.Color("white"))
+    clock_min_ones = font.render(f"{state.clock // 60 % 10}", True, pygame.Color("white"))
     clock_min_ones_pos = clock_colon_pos - clock_digit_width
     screen.blit(clock_min_ones, (clock_min_ones_pos + (clock_digit_width - clock_min_ones.get_width()) / 2, font_pos_y))
 
-    clock_min_tens = font.render(f"{state.timer // 600}", True, pygame.Color("white"))
+    clock_min_tens = font.render(f"{state.clock // 600}", True, pygame.Color("white"))
     clock_min_tens_pos = clock_min_ones_pos - clock_digit_width
     screen.blit(clock_min_tens, (clock_min_tens_pos + (clock_digit_width - clock_min_tens.get_width()) / 2, font_pos_y))

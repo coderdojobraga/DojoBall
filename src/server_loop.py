@@ -26,7 +26,7 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
 
         check_goal(state)
 
-        state.timer = pygame.time.get_ticks() // 1000
+        state.clock = pygame.time.get_ticks() // 1000
 
         data = pickle.dumps(state)
         last_state_pickle[:] = len(data).to_bytes(4, "big") + data
