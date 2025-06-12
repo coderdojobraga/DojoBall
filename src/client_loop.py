@@ -164,23 +164,6 @@ def draw_post(screen, post):
     pygame.gfxdraw.aacircle(screen, x, y, inner_radius, inner_color)
 
 
-def draw_scoreboard(state, screen):
-    font = pygame.font.SysFont("arial", 30)
-    red_score_text = font.render(
-        f"Blue: {state.score_red}", True, pygame.Color("white")
-    )
-    blue_score_text = font.render(
-        f"Red: {state.score_blue}", True, pygame.Color("white")
-    )
-
-    screen.blit(blue_score_text, (50, 50))
-    screen.blit(red_score_text, (1080 - blue_score_text.get_width() - 50, 50))
-
-def draw_timer(timer, screen):
-    font = pygame.font.SysFont("arial", 30)
-    timer_text = font.render(f"{timer // 60:02d}:{timer % 60:02d}", True, pygame.Color("white"))
-    screen.blit(timer_text, (540 - timer_text.get_width() // 2, 50))
-
 def draw_hud(screen, state):
     font = pygame.font.SysFont("Arial Bold", 33)
 
