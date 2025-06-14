@@ -3,7 +3,7 @@ import pygame
 import socket
 import client_loop as loop
 from client_loop import send_data
-from state import Team
+from state import Team, SCREEN_WIDTH, SCREEN_HEIGHT
 from hot_reloading import hot_cycle
 
 
@@ -62,9 +62,9 @@ def main():
     pygame.init()
 
     # Pygame setup
-    screen = pygame.display.set_mode((1080, 720))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     name_font = pygame.font.SysFont("arial", 30)
-    transparent_surface = pygame.Surface((1080, 720), pygame.SRCALPHA)
+    transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
     if debug:
         # Debug mode

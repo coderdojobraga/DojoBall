@@ -70,19 +70,33 @@ def handle_collisions(state):
             c2.vx += p * c1.mass * nx
             c2.vy += p * c1.mass * ny
 
-    # Check for collisions with walls
-    for c in moving_circles(state):
-        if c.x < c.radius:
-            c.x = c.radius
+    # Check for ball collision with field boundaries
+    if state.ball.x < state.ball.radius + state.field_coords[0] and (state.ball.y < state.posts["tl"].y or state.ball.y > state.posts["bl"].y):
+        state.ball.x = state.ball.radius + state.field_coords[0]
+        state.ball.vx *= -1
+    if state.ball.x >= state.field_coords[2] - state.ball.radius and (state.ball.y < state.posts["tr"].y or state.ball.y > state.posts["br"].y):
+        state.ball.x = state.field_coords[2] - 1 - state.ball.radius
+        state.ball.vx *= -1
+    if state.ball.y < state.ball.radius + state.field_coords[1]:
+        state.ball.y = state.ball.radius + state.field_coords[1]
+        state.ball.vy *= -1
+    if state.ball.y >= state.field_coords[3] - state.ball.radius:
+        state.ball.y = state.field_coords[3] - 1 - state.ball.radius
+        state.ball.vy *= -1
+
+    # Check for player collision with player area boundaries
+    for c in moving_circles(state): # state.players.values():
+        if c.x < c.radius + state.player_area_coords[0]:
+            c.x = c.radius + state.player_area_coords[0]
             c.vx *= -1
-        if c.x >= SCREEN_WIDTH - c.radius:
-            c.x = SCREEN_WIDTH - 1 - c.radius
+        if c.x >= state.player_area_coords[2] - c.radius:
+            c.x = state.player_area_coords[2] - 1 - c.radius
             c.vx *= -1
-        if c.y < c.radius:
-            c.y = c.radius
+        if c.y < c.radius + state.player_area_coords[1]:
+            c.y = c.radius + state.player_area_coords[1]
             c.vy *= -1
-        if c.y >= SCREEN_HEIGHT - c.radius:
-            c.y = SCREEN_HEIGHT - 1 - c.radius
+        if c.y >= state.player_area_coords[3] - c.radius:
+            c.y = state.player_area_coords[3] - 1 - c.radius
             c.vy *= -1
 
     # Check for collisions with posts
@@ -171,14 +185,14 @@ def apply_input(player, input) -> None:
 def check_goal(state):
     if (
         state.ball.x < state.posts["tl"].x
-        and state.posts["bl"].y < state.ball.y < state.posts["tl"].y
+        and state.posts["bl"].y > state.ball.y > state.posts["tl"].y
     ):
         # Blue team scores
         state.score_blue += 1
         reset_ball(state)
     elif (
         state.ball.x > state.posts["tr"].x
-        and state.posts["br"].y < state.ball.y < state.posts["tr"].y
+        and state.posts["br"].y > state.ball.y > state.posts["tr"].y
     ):
         # Red team scores
         state.score_red += 1
