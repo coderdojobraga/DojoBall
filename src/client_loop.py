@@ -64,6 +64,8 @@ def render(state, screen, transparent_surface, name_font, sockname):
     transparent_surface.fill((0, 0, 0, 0))
     screen.fill(COLOR_FIELD)
 
+    draw_field(screen, state.field_coords)
+
     # Desenhar a bola
     draw_ball(state.ball, screen)
 
@@ -84,6 +86,12 @@ def render(state, screen, transparent_surface, name_font, sockname):
     # Atualizar o ecra
     screen.blit(transparent_surface, (0, 0))
     pygame.display.flip()
+
+
+def draw_field(screen, field_coords):
+    x1, y1, x2, y2 = field_coords
+    pygame.draw.rect(screen, pygame.Color("#688e57"), (x1, y1, x2-x1, y2-y1))
+    pygame.draw.rect(screen, pygame.Color("#c6e7bd"), (x1, y1, x2-x1, y2-y1), width=7)
 
 
 def draw_ball(ball, screen):

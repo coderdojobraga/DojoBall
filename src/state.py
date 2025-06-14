@@ -1,8 +1,25 @@
 from enum import Enum, auto
 
 
-SCREEN_WIDTH = 1080
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
+
+FIELD_SCALE = 70
+FIELD_WIDTH = 21 * FIELD_SCALE
+FIELD_HEIGHT = 10 * FIELD_SCALE
+
+FIELD_TL_X = round((SCREEN_WIDTH - FIELD_WIDTH) / 2)
+FIELD_TL_Y = round((SCREEN_HEIGHT - FIELD_HEIGHT) / 2)
+FIELD_BR_X = FIELD_TL_X + FIELD_WIDTH
+FIELD_BR_Y = FIELD_TL_Y + FIELD_HEIGHT
+
+PLAYER_AREA_WIDTH = FIELD_WIDTH + 2 * 145 # 145 is the diameter of a player + 55
+PLAYER_AREA_HEIGHT = FIELD_HEIGHT + 2 * 90 # 90 is the diameter of a player
+
+PLAYER_AREA_TL_X = round((SCREEN_WIDTH - PLAYER_AREA_WIDTH) / 2)
+PLAYER_AREA_TL_Y = round((SCREEN_HEIGHT - PLAYER_AREA_HEIGHT) / 2)
+PLAYER_AREA_BR_X = PLAYER_AREA_TL_X + PLAYER_AREA_WIDTH
+PLAYER_AREA_BR_Y = PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT
 
 
 class Team(Enum):
@@ -15,15 +32,15 @@ class Team(Enum):
 
 class State:
     def __init__(self) -> None:
-        self.field_width: int = SCREEN_WIDTH
-        self.field_height: int = SCREEN_HEIGHT
+        self.player_area_coords: tuple[int, int, int, int] = (PLAYER_AREA_TL_X, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_BR_Y)
+        self.field_coords: tuple[int, int, int, int] = (FIELD_TL_X, FIELD_TL_Y, FIELD_BR_X, FIELD_BR_Y)
         self.players: dict[tuple[str, int], Player] = {}
         self.ball: Ball = Ball()
         self.posts: dict[str, Post] = {
-            "tl": Post(Team.RED, 50, SCREEN_HEIGHT / 2 + 80),
-            "bl": Post(Team.RED, 50, SCREEN_HEIGHT / 2 - 80),
-            "tr": Post(Team.BLUE, SCREEN_WIDTH - 50, SCREEN_HEIGHT / 2 + 80),
-            "br": Post(Team.BLUE, SCREEN_WIDTH - 50, SCREEN_HEIGHT / 2 - 80),
+            "tl": Post(Team.RED, FIELD_TL_X, SCREEN_HEIGHT / 2 - 150),
+            "bl": Post(Team.RED, FIELD_TL_X, SCREEN_HEIGHT / 2 + 150),
+            "tr": Post(Team.BLUE, FIELD_BR_X, SCREEN_HEIGHT / 2 - 150),
+            "br": Post(Team.BLUE, FIELD_BR_X, SCREEN_HEIGHT / 2 + 150),
         }
         self.score_red: int = 0
         self.score_blue: int = 0
