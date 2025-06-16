@@ -4,7 +4,7 @@ import pygame
 import pickle
 import readline
 import server_loop as loop
-from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, Team
+from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_TL_X, Team
 from threading import Condition, Lock, Thread
 from hot_reloading import hot_cycle
 
@@ -107,9 +107,9 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
             # Initialize position for new player
             if self.client_address not in state.players:
                 if team == Team.RED:
-                    state.players[self.client_address] = Player(name, team, 45, SCREEN_HEIGHT / 2)
+                    state.players[self.client_address] = Player(name, team, PLAYER_AREA_TL_X + 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
                 else:
-                    state.players[self.client_address] = Player(name, team, SCREEN_WIDTH - 45, SCREEN_HEIGHT / 2)
+                    state.players[self.client_address] = Player(name, team, PLAYER_AREA_BR_X - 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
 
             clients.append(self.request)
 

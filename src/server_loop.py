@@ -2,7 +2,7 @@ import math
 import pickle
 import pygame
 from itertools import combinations, product
-from state import SCREEN_HEIGHT, SCREEN_WIDTH, Team
+from state import FIELD_WIDTH, PLAYER_AREA_BR_X, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_X, PLAYER_AREA_TL_Y, Team, FIELD_TL_X, FIELD_TL_Y, FIELD_HEIGHT
 
 
 def moving_circles(state):
@@ -70,19 +70,33 @@ def handle_collisions(state):
             c2.vx += p * c1.mass * nx
             c2.vy += p * c1.mass * ny
 
-    # Check for collisions with walls
-    for c in moving_circles(state):
-        if c.x < c.radius:
-            c.x = c.radius
+    # Check for ball collision with field boundaries
+    if state.ball.x < state.ball.radius + state.field_coords[0] and (state.ball.y < state.posts["tl"].y or state.ball.y > state.posts["bl"].y):
+        state.ball.x = state.ball.radius + state.field_coords[0]
+        state.ball.vx *= -1
+    if state.ball.x >= state.field_coords[2] - state.ball.radius and (state.ball.y < state.posts["tr"].y or state.ball.y > state.posts["br"].y):
+        state.ball.x = state.field_coords[2] - 1 - state.ball.radius
+        state.ball.vx *= -1
+    if state.ball.y < state.ball.radius + state.field_coords[1]:
+        state.ball.y = state.ball.radius + state.field_coords[1]
+        state.ball.vy *= -1
+    if state.ball.y >= state.field_coords[3] - state.ball.radius:
+        state.ball.y = state.field_coords[3] - 1 - state.ball.radius
+        state.ball.vy *= -1
+
+    # Check for player collision with player area boundaries
+    for c in moving_circles(state): # state.players.values():
+        if c.x < c.radius + state.player_area_coords[0]:
+            c.x = c.radius + state.player_area_coords[0]
             c.vx *= -1
-        if c.x >= SCREEN_WIDTH - c.radius:
-            c.x = SCREEN_WIDTH - 1 - c.radius
+        if c.x >= state.player_area_coords[2] - c.radius:
+            c.x = state.player_area_coords[2] - 1 - c.radius
             c.vx *= -1
-        if c.y < c.radius:
-            c.y = c.radius
+        if c.y < c.radius + state.player_area_coords[1]:
+            c.y = c.radius + state.player_area_coords[1]
             c.vy *= -1
-        if c.y >= SCREEN_HEIGHT - c.radius:
-            c.y = SCREEN_HEIGHT - 1 - c.radius
+        if c.y >= state.player_area_coords[3] - c.radius:
+            c.y = state.player_area_coords[3] - 1 - c.radius
             c.vy *= -1
 
     # Check for collisions with posts
@@ -171,7 +185,7 @@ def apply_input(player, input) -> None:
 def check_goal(state):
     if (
         state.ball.x < state.posts["tl"].x
-        and state.posts["bl"].y < state.ball.y < state.posts["tl"].y
+        and state.posts["bl"].y > state.ball.y > state.posts["tl"].y
     ):
         # Blue team scores
         state.score_blue += 1
@@ -179,7 +193,7 @@ def check_goal(state):
         reset_players(state)
     elif (
         state.ball.x > state.posts["tr"].x
-        and state.posts["br"].y < state.ball.y < state.posts["tr"].y
+        and state.posts["br"].y > state.ball.y > state.posts["tr"].y
     ):
         # Red team scores
         state.score_red += 1
@@ -188,26 +202,26 @@ def check_goal(state):
 
 
 def reset_ball(state):
-    state.ball.x = SCREEN_WIDTH / 2
-    state.ball.y = SCREEN_HEIGHT / 2
+    state.ball.x = FIELD_TL_X + FIELD_WIDTH / 2
+    state.ball.y = FIELD_TL_Y + FIELD_HEIGHT / 2
     state.ball.vx = 0
     state.ball.vy = 0
 
 
 def reset_players(state):
-    red_last = blue_last = SCREEN_HEIGHT / 2
+    red_last = blue_last = PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2
     red_y_offset = blue_y_offset = 0
     red_side = blue_side = -1
 
     for player in state.players.values():
         if player.team == Team.RED:
-            player.x = 200
+            player.x = PLAYER_AREA_TL_X + 400
             player.y = red_last + red_y_offset * red_side
             red_last = player.y
             red_y_offset += 120
             red_side *= -1
         else:
-            player.x = SCREEN_WIDTH - 200
+            player.x = PLAYER_AREA_BR_X - 400
             player.y = blue_last + blue_y_offset * blue_side
             blue_last = player.y
             blue_y_offset += 120
