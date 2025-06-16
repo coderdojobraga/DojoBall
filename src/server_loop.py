@@ -2,7 +2,7 @@ import math
 import pickle
 import pygame
 from itertools import combinations, product
-from state import SCREEN_HEIGHT, SCREEN_WIDTH
+from state import SCREEN_HEIGHT, SCREEN_WIDTH, Team
 
 
 def moving_circles(state):
@@ -190,6 +190,7 @@ def check_goal(state):
         # Blue team scores
         state.score_blue += 1
         reset_ball(state)
+        reset_players(state)
     elif (
         state.ball.x > state.posts["tr"].x
         and state.posts["br"].y > state.ball.y > state.posts["tr"].y
@@ -197,6 +198,7 @@ def check_goal(state):
         # Red team scores
         state.score_red += 1
         reset_ball(state)
+        reset_players(state)
 
 
 def reset_ball(state):
@@ -204,3 +206,27 @@ def reset_ball(state):
     state.ball.y = SCREEN_HEIGHT / 2
     state.ball.vx = 0
     state.ball.vy = 0
+
+
+def reset_players(state):
+    red_last = blue_last = SCREEN_HEIGHT / 2
+    red_y_offset = blue_y_offset = 0
+    red_side = blue_side = -1
+
+    for player in state.players.values():
+        if player.team == Team.RED:
+            player.x = 200
+            player.y = red_last + red_y_offset * red_side
+            red_last = player.y
+            red_y_offset += 120
+            red_side *= -1
+        else:
+            player.x = SCREEN_WIDTH - 200
+            player.y = blue_last + blue_y_offset * blue_side
+            blue_last = player.y
+            blue_y_offset += 120
+            blue_side *= -1
+
+        player.vx = 0
+        player.vy = 0
+        player.kick = False
