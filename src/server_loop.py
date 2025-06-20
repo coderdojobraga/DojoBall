@@ -10,17 +10,10 @@ def moving_circles(state):
 
 
 def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
-    # Track previous input for edge-triggered kick
-    if not hasattr(step, "prev_inputs"):
-        step.prev_inputs = {}
-    prev_inputs = step.prev_inputs
     with state_lock:
         for address, player in state.players.items():
             if address in inputs:
-                prev_input = prev_inputs.get(address)
-                curr_input = inputs[address]
-                apply_input(player, curr_input, prev_input)
-                prev_inputs[address] = curr_input
+                apply_input(player, inputs[address])
                 del inputs[address]
 
         for circle in moving_circles(state):
