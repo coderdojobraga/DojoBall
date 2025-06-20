@@ -80,7 +80,7 @@ while running:
     # Desenhar jogadores
     for player in state.players.values():
         if player.team == Team.BLUE:
-            pygame.draw.circle(screen, pygame.Color("yellow"), (player.x, player.y), 45)
+            pygame.draw.circle(screen, pygame.Color("blue"), (player.x, player.y), 45)
         else:
             pygame.draw.circle(screen, pygame.Color("red"), (player.x, player.y), 45)
 

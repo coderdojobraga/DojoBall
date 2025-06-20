@@ -115,16 +115,12 @@ def handle_collisions(state):
 def handle_kicks(state):
     for player in state.players.values():
         if player.kick and not player.kick_locked:
-            print("[LOG] Entering kick state")
             dx = state.ball.x - player.x
             dy = state.ball.y - player.y
             dist = dx**2 + dy**2
 
-            # Verifica se a bola está dentro do raio de pontapé
-            print("[LOG] Dist:", dist, (player.radius + state.ball.radius + 20) ** 2)
             if dist < (player.radius + state.ball.radius + 20) ** 2:
                 distance = math.sqrt(dist)
-                print("[LOG] Kick: ", distance)
                 state.ball.vx += 0.5 * dx / distance
                 state.ball.vy += 0.5 * dy / distance
                 player.kick_locked = True
@@ -150,7 +146,7 @@ def update_position(circle):
         circle.vy = 0
 
 
-def apply_input(player, input, prev_input=None) -> None:
+def apply_input(player, input) -> None:
     x = (-1 if input.left else 0) + (1 if input.right else 0)
     y = (-1 if input.up else 0) + (1 if input.down else 0)
 
@@ -172,10 +168,8 @@ def apply_input(player, input, prev_input=None) -> None:
             player.vx /= magnitude
             player.vy /= magnitude
 
-    # Permite pressionar espaço livremente, só faz lock após chute
     if not input.kick:
         player.kick_locked = False
-    # player.kick só é True se não estiver locked
     player.kick = input.kick and not player.kick_locked
 
 
