@@ -106,16 +106,28 @@ def handle_collisions(state):
 
 
 def handle_kicks(state):
+    MAX_KICK_FORCE = 1.5
+    MIN_KICK_FORCE = 0.3
+
     for player in state.players.values():
         if player.kick and not player.kick_locked:
             dx = state.ball.x - player.x
             dy = state.ball.y - player.y
-            dist = dx**2 + dy**2
+            dist_sqr = dx**2 + dy**2
 
-            if dist < (player.radius + state.ball.radius + 20) ** 2:
-                distance = math.sqrt(dist)
-                state.ball.vx += 0.5 * dx / distance
-                state.ball.vy += 0.5 * dy / distance
+            KICK_RADIUS = player.radius + state.ball.radius + 20
+
+            if dist_sqr < KICK_RADIUS**2:
+                distance = math.sqrt(dist_sqr)
+
+                # The closer it is, the stronger the kick
+                proximity = max(KICK_RADIUS - distance, 0)
+                strength_factor = proximity / KICK_RADIUS
+
+                kick_force = MIN_KICK_FORCE + (MAX_KICK_FORCE - MIN_KICK_FORCE) * strength_factor
+
+                state.ball.vx += kick_force * dx / distance
+                state.ball.vy += kick_force * dy / distance
                 player.kick_locked = True
 
 
