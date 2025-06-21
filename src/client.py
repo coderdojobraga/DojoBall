@@ -2,9 +2,77 @@ import argparse
 import pygame
 import socket
 import client_loop as loop
-from client_loop import send_data
+from client_loop import send_data, receive_data
 from state import Team, SCREEN_WIDTH, SCREEN_HEIGHT
 from hot_reloading import hot_cycle
+
+def initial_configuration(client_socket):
+    # Receber equipas e jogadores do servidor
+    try:
+        initial_info = receive_data(client_socket)
+    except (ConnectionResetError, ConnectionAbortedError):
+        print("Error receiving initial information from server.")
+        return
+
+    print("Current teams:")
+    print("  Blue team:")
+    for player in initial_info["teams"]["blue"]:
+        print(f"    - {player}")
+    print("  Red team:")
+    for player in initial_info["teams"]["red"]:
+        print(f"    - {player}")
+
+    is_name_valid = False
+    while not is_name_valid:
+
+        # Ler nome
+        name = input("Nick: ")
+
+        # Enviar nome
+        send_data(client_socket, name)
+
+        try:
+            name_info = receive_data(client_socket)
+        except (ConnectionResetError, ConnectionAbortedError):
+            print("Error receiving initial information from server.")
+            return
+
+        is_name_valid = name_info["validity"]
+
+        if not is_name_valid:
+            print("The player name is already choosen. Please type another one.")
+
+    is_team_valid = False
+    while not is_team_valid:
+
+        # Ler equipa
+        while True:
+            team_input = input("Team ([b]lue/[r]ed): ").strip().lower()
+
+            match team_input:
+                case "[b]lue" | "blue" | "b":
+                    team = Team.BLUE
+                case "[r]ed" | "red" | "r":
+                    team = Team.RED
+                case _:
+                    print("Invalid team. Please choose '[b]lue' or '[r]ed'.")
+                    continue
+
+            break
+
+        # Enviar equipa
+        send_data(client_socket, team)
+
+        try:
+            team_info = receive_data(client_socket)
+        except (ConnectionResetError, ConnectionAbortedError):
+            print("Error receiving initial information from server.")
+            return
+
+        is_team_valid = team_info["validity"]
+
+        if not is_team_valid:
+            print("This team can't be choosen. Please type another one.")
 
 
 def main():
@@ -34,29 +102,8 @@ def main():
     # Criar socket TCP
     client_socket = socket.create_connection((host, port))
 
-    # Ler nome
-    name = input("Nick: ")
-
-    # Enviar nome
-    send_data(client_socket, name)
-
-    # Ler equipa
-    while True:
-        team_input = input("Team ([b]lue/[r]ed): ").strip().lower()
-
-        match team_input:
-            case "[b]lue" | "blue" | "b":
-                team = Team.BLUE
-            case "[r]ed" | "red" | "r":
-                team = Team.RED
-            case _:
-                print("Invalid team. Please choose '[b]lue' or '[r]ed'.")
-                continue
-
-        break
-
-    # Enviar equipa
-    send_data(client_socket, team)
+    # Ver equipas e jogadores, escolher o nome e equipa
+    initial_configuration(client_socket)
 
     # Iniciar pygame
     pygame.init()
