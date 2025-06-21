@@ -81,27 +81,66 @@ def interpreter():
 
 class GameTCPHandler(socketserver.BaseRequestHandler):
     def setup(self):
-        try:
-            size = int.from_bytes(self.request.recv(4), "big")
-            data = self.request.recv(size)
-        except (ConnectionResetError, ConnectionAbortedError):
-            return
-        if not data:
-            return
+        # Send teams and players to the client
+        with state_lock:
+            players_blue = [p.name for p in state.players.values() if p.team == Team.BLUE]
+            players_red = [p.name for p in state.players.values() if p.team == Team.RED]
 
-        name = pickle.loads(data)
+        data_to_send = {"teams": {"blue": players_blue, "red": players_red}}
+        data_bytes = pickle.dumps(data_to_send)
+        self.request.sendall(len(data_bytes).to_bytes(4, "big"))
+        self.request.sendall(data_bytes)
 
-        try:
-            size = int.from_bytes(self.request.recv(4), "big")
-            data = self.request.recv(size)
-        except (ConnectionResetError, ConnectionAbortedError):
-            return
-        if not data:
-            return
+        is_name_valid = False
+        while not is_name_valid:
+            try:
+                size = int.from_bytes(self.request.recv(4), "big")
+                data = self.request.recv(size)
+            except (ConnectionResetError, ConnectionAbortedError):
+                return
+            if not data:
+                return
 
-        team = pickle.loads(data)
+            name = pickle.loads(data)
 
-        print(f"{name} joined on team {team}")
+            # Verifies submited name
+            with state_lock:
+                players_blue = [p.name for p in state.players.values() if p.team == Team.BLUE]
+                players_red = [p.name for p in state.players.values() if p.team == Team.RED]
+                all_players = players_blue + players_red
+                is_name_valid = name not in all_players
+
+            data_to_send = {'validity': is_name_valid}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+
+        is_team_valid = False
+        while not is_team_valid:
+            try:
+                size = int.from_bytes(self.request.recv(4), "big")
+                data = self.request.recv(size)
+            except (ConnectionResetError, ConnectionAbortedError):
+                return
+            if not data:
+                return
+
+            team = pickle.loads(data)
+
+            # Verifies submited team
+            with state_lock:
+                number_players_blue = len([p.name for p in state.players.values() if p.team == Team.BLUE])
+                number_players_red = len([p.name for p in state.players.values() if p.team == Team.RED])
+                # Allow joining if the difference in team sizes would not exceed 1
+                is_team_valid = abs((number_players_blue + (1 if team == Team.BLUE else 0)) - (number_players_red + (1 if team == Team.RED else 0))) <= 1
+
+            data_to_send = {'validity': is_team_valid}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+
+            if is_team_valid:
+                print(f"{name} joined on team {team}")
 
         with state_lock:
             # Initialize position for new player
