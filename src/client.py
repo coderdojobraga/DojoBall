@@ -6,6 +6,10 @@ from client_loop import send_data, receive_data
 from state import Team, SCREEN_WIDTH, SCREEN_HEIGHT
 from hot_reloading import hot_cycle
 
+class TooManyTriesError(Exception):
+    """Exceção lançada quando há demasiadas tentativas inválidas de nome/equipa."""
+    pass
+
 def initial_configuration(client_socket):
     # Receber equipas e jogadores do servidor
     try:
@@ -36,6 +40,10 @@ def initial_configuration(client_socket):
         except (ConnectionResetError, ConnectionAbortedError):
             print("Error receiving initial information from server.")
             return
+
+        if name_info.get("error", False):
+            print(name_info["error"])
+            raise TooManyTriesError()
 
         is_name_valid = name_info["validity"]
 
@@ -68,6 +76,10 @@ def initial_configuration(client_socket):
         except (ConnectionResetError, ConnectionAbortedError):
             print("Error receiving initial information from server.")
             return
+
+        if team_info.get("error", False):
+            print(team_info["error"])
+            raise TooManyTriesError()
 
         is_team_valid = team_info["validity"]
 
@@ -102,28 +114,31 @@ def main():
     # Criar socket TCP
     client_socket = socket.create_connection((host, port))
 
-    # Ver equipas e jogadores, escolher o nome e equipa
-    initial_configuration(client_socket)
+    try:
+        # Ver equipas e jogadores, escolher o nome e equipa
+        initial_configuration(client_socket)
 
-    # Iniciar pygame
-    pygame.init()
+        # Iniciar pygame
+        pygame.init()
 
-    # Pygame setup
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    name_font = pygame.font.SysFont("arial", 30)
-    transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        # Pygame setup
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        name_font = pygame.font.SysFont("arial", 30)
+        transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
-    if debug:
-        # Debug mode
-        print("Debug mode enabled. Hot reloading is active.")
-        hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font)
-    else:
-        # Normal mode
-        while loop.step(client_socket, screen, transparent_surface, name_font):
-            pass
+        if debug:
+            # Debug mode
+            print("Debug mode enabled. Hot reloading is active.")
+            hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font)
+        else:
+            # Normal mode
+            while loop.step(client_socket, screen, transparent_surface, name_font):
+                pass
 
-    client_socket.close()
-    pygame.quit()
+        client_socket.close()
+        pygame.quit()
+    except TooManyTriesError:
+        client_socket.close()
 
 
 if __name__ == "__main__":

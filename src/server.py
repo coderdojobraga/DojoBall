@@ -79,6 +79,10 @@ def interpreter():
         exec(line)
 
 
+MAX_NAME_ATTEMPTS = 3
+MAX_TEAM_ATTEMPTS = 3
+
+
 class GameTCPHandler(socketserver.BaseRequestHandler):
     def setup(self):
         # Send teams and players to the client
@@ -92,7 +96,9 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
         self.request.sendall(data_bytes)
 
         is_name_valid = False
-        while not is_name_valid:
+        name_attempts = 0
+        while not is_name_valid and name_attempts < MAX_NAME_ATTEMPTS:
+            name_attempts += 1
             try:
                 size = int.from_bytes(self.request.recv(4), "big")
                 data = self.request.recv(size)
@@ -115,8 +121,17 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
             self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
             self.request.sendall(data_bytes)
 
+        if not is_name_valid:
+            data_to_send = {'error': "Too many name input tries."}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+            return
+
         is_team_valid = False
-        while not is_team_valid:
+        team_attempts = 0
+        while not is_team_valid and team_attempts < MAX_TEAM_ATTEMPTS:
+            team_attempts += 1
             try:
                 size = int.from_bytes(self.request.recv(4), "big")
                 data = self.request.recv(size)
@@ -139,8 +154,14 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
             self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
             self.request.sendall(data_bytes)
 
-            if is_team_valid:
-                print(f"{name} joined on team {team}")
+        if not is_team_valid:
+            data_to_send = {'error': "Too many team input tries."}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+            return
+
+        print(f"{name} joined on team {team}")
 
         with state_lock:
             # Initialize position for new player
@@ -173,13 +194,14 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(last_state_pickle)
 
     def finish(self):
-        print(f"{state.players[self.client_address].name} left")
         with state_lock:
-            # Remove client data on disconnect
-            if self.request in clients:
-                clients.remove(self.request)
             if self.client_address in state.players:
-                del state.players[self.client_address]
+                print(f"{state.players[self.client_address].name} left")
+                # Remove client data on disconnect
+                if self.request in clients:
+                    clients.remove(self.request)
+                if self.client_address in state.players:
+                    del state.players[self.client_address]
 
 
 if __name__ == "__main__":
