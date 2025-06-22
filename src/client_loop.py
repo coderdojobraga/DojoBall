@@ -250,3 +250,19 @@ def draw_hud(screen, state):
     clock_min_tens = font.render(f"{state.clock // 600}", True, font_color)
     clock_min_tens_pos = clock_min_ones_pos - clock_digit_width
     screen.blit(clock_min_tens, (clock_min_tens_pos + round((clock_digit_width - clock_min_tens.get_width()) / 2), font_pos_y))
+
+    # Desenhar estado da partida
+    minutes = int(state.match_manager.time_remaining) // 60
+    seconds = int(state.match_manager.time_remaining) % 60
+    match_state_text = f"{state.match_manager.state.name.capitalize()}: {minutes:02d}:{seconds:02d}"
+    match_state_surface = font.render(match_state_text, True, font_color)
+
+    # Calcular a posição central do HUD
+    hud_center_x = hud_pos_x + hud_width / 2
+    text_width = match_state_surface.get_width()
+
+    # Ajustar a posição do texto para centralizar
+    text_pos_x = hud_center_x - text_width / 2
+    text_pos_y = font_pos_y
+
+    screen.blit(match_state_surface, (text_pos_x, text_pos_y))
