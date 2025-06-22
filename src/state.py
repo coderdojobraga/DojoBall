@@ -45,6 +45,7 @@ class State:
         self.score_red: int = 0
         self.score_blue: int = 0
         self.clock: int = 0 # in seconds
+        self.match_manager = MatchManager()
 
 
 class Circle:
@@ -105,3 +106,56 @@ class Post(Circle):
     ) -> None:
         super().__init__(x, y, radius=radius)
         self.team: Team = team
+
+class MatchState(Enum):
+    PLAYING = auto()
+    BREAK = auto()
+    PAUSED = auto()
+
+class MatchManager:
+    def __init__(self):
+        self.state = MatchState.BREAK
+        self.match_duration = 120  # 2 minutos
+        self.break_duration = 30   # 30 segundos
+        self.time_remaining = self.break_duration
+
+    def update(self, dt):
+        if self.state != MatchState.PAUSED:
+            self.time_remaining -= dt
+            if self.time_remaining <= 0:
+                self.time_remaining = 0
+                self._change_state()
+                print(f"State changed to {self.state}")
+
+    def _change_state(self):
+        if self.state == MatchState.PLAYING:
+            self.state = MatchState.BREAK
+            self.time_remaining = self.break_duration
+            print("Match ended, break started")
+        elif self.state == MatchState.BREAK:
+            self.state = MatchState.PLAYING
+            self.time_remaining = self.match_duration
+            print("Break ended, match started")
+        elif self.state == MatchState.PAUSED:
+            self.state = MatchState.PLAYING
+            self.time_remaining = self.match_duration
+            print("Match resumed")
+
+    def start_match(self):
+        if self.state == MatchState.BREAK:
+            self.state = MatchState.PLAYING
+            self.time_remaining = self.match_duration
+
+    def pause_match(self):
+        if self.state == MatchState.PLAYING:
+            self.state = MatchState.PAUSED
+
+    def resume_match(self):
+        if self.state == MatchState.PAUSED:
+            self.state = MatchState.PLAYING
+
+    def set_match_time(self, seconds):
+        self.match_duration = seconds
+
+    def set_break_time(self, seconds):
+        self.break_duration = seconds

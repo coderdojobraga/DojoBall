@@ -4,7 +4,7 @@ import pygame
 import pickle
 import readline
 import server_loop as loop
-from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_TL_X, Team
+from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_TL_X, Team, MatchManager
 from threading import Condition, Lock, Thread
 from hot_reloading import hot_cycle
 
@@ -49,7 +49,7 @@ def main():
     )
     game_cycle_thread.start()
 
-    interpreter_thread = Thread(target=interpreter, daemon=True)
+    interpreter_thread = Thread(target=interpreter, args=(state,), daemon=True)
     interpreter_thread.start()
 
     with socketserver.ThreadingTCPServer(("0.0.0.0", port), GameTCPHandler) as server:
@@ -73,10 +73,27 @@ def game_cycle(debug, state, clock, inputs, state_lock, send_cond, last_state_pi
             pass
 
 
-def interpreter():
+def interpreter(state):
     while True:
         line = input(">>> ")
-        exec(line)
+        if line.startswith("start_match"):
+            state.match_manager.start_match()
+        elif line.startswith("pause_match"):
+            state.match_manager.pause_match()
+            print("Match paused")
+        elif line.startswith("resume_match"):
+            state.match_manager.resume_match()
+            print("Match resumed")
+        elif line.startswith("set_match_time"):
+            _, seconds = line.split()
+            state.match_manager.set_match_time(int(seconds))
+            print(f"Match time set to {seconds} seconds")
+        elif line.startswith("set_break_time"):
+            _, seconds = line.split()
+            state.match_manager.set_break_time(int(seconds))
+            print(f"Break time set to {seconds} seconds")
+        else:
+            exec(line)
 
 
 MAX_NAME_ATTEMPTS = 3
