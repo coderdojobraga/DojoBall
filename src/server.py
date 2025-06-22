@@ -79,27 +79,87 @@ def interpreter():
         exec(line)
 
 
+MAX_NAME_ATTEMPTS = 3
+MAX_TEAM_ATTEMPTS = 3
+
+
 class GameTCPHandler(socketserver.BaseRequestHandler):
     def setup(self):
-        try:
-            size = int.from_bytes(self.request.recv(4), "big")
-            data = self.request.recv(size)
-        except (ConnectionResetError, ConnectionAbortedError):
-            return
-        if not data:
+        # Send teams and players to the client
+        with state_lock:
+            players_blue = [p.name for p in state.players.values() if p.team == Team.BLUE]
+            players_red = [p.name for p in state.players.values() if p.team == Team.RED]
+
+        data_to_send = {"teams": {"blue": players_blue, "red": players_red}}
+        data_bytes = pickle.dumps(data_to_send)
+        self.request.sendall(len(data_bytes).to_bytes(4, "big"))
+        self.request.sendall(data_bytes)
+
+        is_name_valid = False
+        name_attempts = 0
+        while not is_name_valid and name_attempts < MAX_NAME_ATTEMPTS:
+            name_attempts += 1
+            try:
+                size = int.from_bytes(self.request.recv(4), "big")
+                data = self.request.recv(size)
+            except (ConnectionResetError, ConnectionAbortedError):
+                return
+            if not data:
+                return
+
+            name = pickle.loads(data)
+
+            # Verifies submited name
+            with state_lock:
+                players_blue = [p.name for p in state.players.values() if p.team == Team.BLUE]
+                players_red = [p.name for p in state.players.values() if p.team == Team.RED]
+                all_players = players_blue + players_red
+                is_name_valid = name not in all_players
+
+            data_to_send = {'validity': is_name_valid}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+
+        if not is_name_valid:
+            data_to_send = {'error': "Too many name input tries."}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
             return
 
-        name = pickle.loads(data)
+        is_team_valid = False
+        team_attempts = 0
+        while not is_team_valid and team_attempts < MAX_TEAM_ATTEMPTS:
+            team_attempts += 1
+            try:
+                size = int.from_bytes(self.request.recv(4), "big")
+                data = self.request.recv(size)
+            except (ConnectionResetError, ConnectionAbortedError):
+                return
+            if not data:
+                return
 
-        try:
-            size = int.from_bytes(self.request.recv(4), "big")
-            data = self.request.recv(size)
-        except (ConnectionResetError, ConnectionAbortedError):
-            return
-        if not data:
-            return
+            team = pickle.loads(data)
 
-        team = pickle.loads(data)
+            # Verifies submited team
+            with state_lock:
+                number_players_blue = len([p.name for p in state.players.values() if p.team == Team.BLUE])
+                number_players_red = len([p.name for p in state.players.values() if p.team == Team.RED])
+                # Allow joining if the difference in team sizes would not exceed 1
+                is_team_valid = abs((number_players_blue + (1 if team == Team.BLUE else 0)) - (number_players_red + (1 if team == Team.RED else 0))) <= 1
+
+            data_to_send = {'validity': is_team_valid}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+
+        if not is_team_valid:
+            data_to_send = {'error': "Too many team input tries."}
+            data_bytes = pickle.dumps(data_to_send)
+            self.request.sendall(len(data_bytes).to_bytes(4, 'big'))
+            self.request.sendall(data_bytes)
+            return
 
         print(f"{name} joined on team {team}")
 
@@ -134,13 +194,14 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(last_state_pickle)
 
     def finish(self):
-        print(f"{state.players[self.client_address].name} left")
         with state_lock:
-            # Remove client data on disconnect
-            if self.request in clients:
-                clients.remove(self.request)
             if self.client_address in state.players:
-                del state.players[self.client_address]
+                print(f"{state.players[self.client_address].name} left")
+                # Remove client data on disconnect
+                if self.request in clients:
+                    clients.remove(self.request)
+                if self.client_address in state.players:
+                    del state.players[self.client_address]
 
 
 if __name__ == "__main__":

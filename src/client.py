@@ -2,9 +2,89 @@ import argparse
 import pygame
 import socket
 import client_loop as loop
-from client_loop import send_data
+from client_loop import send_data, receive_data
 from state import Team, SCREEN_WIDTH, SCREEN_HEIGHT
 from hot_reloading import hot_cycle
+
+class TooManyTriesError(Exception):
+    """Exceção lançada quando há demasiadas tentativas inválidas de nome/equipa."""
+    pass
+
+def initial_configuration(client_socket):
+    # Receber equipas e jogadores do servidor
+    try:
+        initial_info = receive_data(client_socket)
+    except (ConnectionResetError, ConnectionAbortedError):
+        print("Error receiving initial information from server.")
+        return
+
+    print("Current teams:")
+    print("  Blue team:")
+    for player in initial_info["teams"]["blue"]:
+        print(f"    - {player}")
+    print("  Red team:")
+    for player in initial_info["teams"]["red"]:
+        print(f"    - {player}")
+
+    is_name_valid = False
+    while not is_name_valid:
+
+        # Ler nome
+        name = input("Nick: ")
+
+        # Enviar nome
+        send_data(client_socket, name)
+
+        try:
+            name_info = receive_data(client_socket)
+        except (ConnectionResetError, ConnectionAbortedError):
+            print("Error receiving initial information from server.")
+            return
+
+        if name_info.get("error", False):
+            print(name_info["error"])
+            raise TooManyTriesError()
+
+        is_name_valid = name_info["validity"]
+
+        if not is_name_valid:
+            print("The player name is already choosen. Please type another one.")
+
+    is_team_valid = False
+    while not is_team_valid:
+
+        # Ler equipa
+        while True:
+            team_input = input("Team ([b]lue/[r]ed): ").strip().lower()
+
+            match team_input:
+                case "[b]lue" | "blue" | "b":
+                    team = Team.BLUE
+                case "[r]ed" | "red" | "r":
+                    team = Team.RED
+                case _:
+                    print("Invalid team. Please choose '[b]lue' or '[r]ed'.")
+                    continue
+
+            break
+
+        # Enviar equipa
+        send_data(client_socket, team)
+
+        try:
+            team_info = receive_data(client_socket)
+        except (ConnectionResetError, ConnectionAbortedError):
+            print("Error receiving initial information from server.")
+            return
+
+        if team_info.get("error", False):
+            print(team_info["error"])
+            raise TooManyTriesError()
+
+        is_team_valid = team_info["validity"]
+
+        if not is_team_valid:
+            print("This team can't be choosen. Please type another one.")
 
 
 def main():
@@ -34,49 +114,31 @@ def main():
     # Criar socket TCP
     client_socket = socket.create_connection((host, port))
 
-    # Ler nome
-    name = input("Nick: ")
+    try:
+        # Ver equipas e jogadores, escolher o nome e equipa
+        initial_configuration(client_socket)
 
-    # Enviar nome
-    send_data(client_socket, name)
+        # Iniciar pygame
+        pygame.init()
 
-    # Ler equipa
-    while True:
-        team_input = input("Team ([b]lue/[r]ed): ").strip().lower()
+        # Pygame setup
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        name_font = pygame.font.SysFont("arial", 30)
+        transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
-        match team_input:
-            case "[b]lue" | "blue" | "b":
-                team = Team.BLUE
-            case "[r]ed" | "red" | "r":
-                team = Team.RED
-            case _:
-                print("Invalid team. Please choose '[b]lue' or '[r]ed'.")
-                continue
+        if debug:
+            # Debug mode
+            print("Debug mode enabled. Hot reloading is active.")
+            hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font)
+        else:
+            # Normal mode
+            while loop.step(client_socket, screen, transparent_surface, name_font):
+                pass
 
-        break
-
-    # Enviar equipa
-    send_data(client_socket, team)
-
-    # Iniciar pygame
-    pygame.init()
-
-    # Pygame setup
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    name_font = pygame.font.SysFont("arial", 30)
-    transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-
-    if debug:
-        # Debug mode
-        print("Debug mode enabled. Hot reloading is active.")
-        hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font)
-    else:
-        # Normal mode
-        while loop.step(client_socket, screen, transparent_surface, name_font):
-            pass
-
-    client_socket.close()
-    pygame.quit()
+        client_socket.close()
+        pygame.quit()
+    except TooManyTriesError:
+        client_socket.close()
 
 
 if __name__ == "__main__":
