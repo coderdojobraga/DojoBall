@@ -123,17 +123,28 @@ def handle_collisions(state):
 
 
 def handle_kicks(state):
+    MIN_KICK_FORCE = 1
+    MAX_KICK_FORCE = 2.5
+    DELTA_KICK_FORCE = MAX_KICK_FORCE - MIN_KICK_FORCE
+    KICK_REACH = 20
+
     for player in state.players.values():
-        if player.kick:
+        if player.kick and not player.kick_locked:
             dx = state.ball.x - player.x
             dy = state.ball.y - player.y
-            dist = dx**2 + dy**2
+            dist_sqr = dx**2 + dy**2
 
-            # Verifica se a bola está dentro do raio de pontapé
-            if dist < (player.radius + state.ball.radius + 20) ** 2:
-                distance = math.sqrt(dist)
-                state.ball.vx += 0.5 * dx / distance
-                state.ball.vy += 0.5 * dy / distance
+            if dist_sqr < (player.radius + state.ball.radius + KICK_REACH)**2:
+                distance = math.sqrt(dist_sqr)
+
+                # The closer it is, the stronger the kick
+                proximity = distance - player.radius - state.ball.radius
+                strength_factor = 1 - proximity / KICK_REACH
+                kick_force = MIN_KICK_FORCE + DELTA_KICK_FORCE * strength_factor
+
+                state.ball.vx += kick_force * dx / distance
+                state.ball.vy += kick_force * dy / distance
+                player.kick_locked = True
 
 
 def clear_kicks(state):
@@ -178,8 +189,9 @@ def apply_input(player, input) -> None:
             player.vx /= magnitude
             player.vy /= magnitude
 
-    if input.kick:
-        player.kick = True
+    if not input.kick:
+        player.kick_locked = False
+    player.kick = input.kick and not player.kick_locked
 
 
 def check_goal(state):
