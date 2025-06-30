@@ -15,14 +15,14 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
 
     with state_lock:
         prev_state = state.match_manager.state
-        state.match_manager.update(dt)
+        state.match_manager.update(dt, state.score_red, state.score_blue)
         # Reset scores if match just ended (PLAYING -> BREAK)
-        if prev_state == MatchState.PLAYING and state.match_manager.state == MatchState.BREAK:
+        if prev_state in [MatchState.PLAYING, MatchState.OVERTIME] and state.match_manager.state == MatchState.BREAK:
             reset_scores(state)
             reset_ball(state)
             reset_players(state)
 
-        if state.match_manager.state == MatchState.PLAYING:
+        if state.match_manager.state in [MatchState.PLAYING, MatchState.OVERTIME]:
             for address, player in state.players.items():
                 if address in inputs:
                     apply_input(player, inputs[address])

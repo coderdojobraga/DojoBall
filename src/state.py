@@ -109,6 +109,7 @@ class Post(Circle):
 
 class MatchState(Enum):
     PLAYING = auto()
+    OVERTIME = auto()
     BREAK = auto()
     PAUSED = auto()
 
@@ -117,29 +118,36 @@ class MatchManager:
         self.state = MatchState.BREAK
         self.match_duration = 120  # 2 minutos
         self.break_duration = 30   # 30 segundos
+        self.overtime_duration = 60 # 1 minuto
         self.time_remaining = self.break_duration
+        self.state_before_pause = None
 
-    def update(self, dt):
+    def update(self, dt, score_red, score_blue):
         if self.state != MatchState.PAUSED:
             self.time_remaining -= dt
             if self.time_remaining <= 0:
                 self.time_remaining = 0
-                self._change_state()
+                self._change_state(score_red, score_blue)
                 print(f"State changed to {self.state}")
 
-    def _change_state(self):
+    def _change_state(self, score_red, score_blue):
         if self.state == MatchState.PLAYING:
+            if score_red == score_blue:
+                self.state = MatchState.OVERTIME
+                self.time_remaining = self.overtime_duration
+                print("Match ended in a tie, starting overtime.")
+            else:
+                self.state = MatchState.BREAK
+                self.time_remaining = self.break_duration
+                print("Match ended, break started")
+        elif self.state == MatchState.OVERTIME:
             self.state = MatchState.BREAK
             self.time_remaining = self.break_duration
-            print("Match ended, break started")
+            print("Overtime ended, break started")
         elif self.state == MatchState.BREAK:
             self.state = MatchState.PLAYING
             self.time_remaining = self.match_duration
             print("Break ended, match started")
-        elif self.state == MatchState.PAUSED:
-            self.state = MatchState.PLAYING
-            self.time_remaining = self.match_duration
-            print("Match resumed")
 
     def start_match(self):
         if self.state == MatchState.BREAK:
@@ -147,12 +155,14 @@ class MatchManager:
             self.time_remaining = self.match_duration
 
     def pause_match(self):
-        if self.state == MatchState.PLAYING:
+        if self.state in [MatchState.PLAYING, MatchState.OVERTIME]:
+            self.state_before_pause = self.state
             self.state = MatchState.PAUSED
 
     def resume_match(self):
-        if self.state == MatchState.PAUSED:
-            self.state = MatchState.PLAYING
+        if self.state == MatchState.PAUSED and self.state_before_pause:
+            self.state = self.state_before_pause
+            self.state_before_pause = None
 
     def set_match_time(self, seconds):
         self.match_duration = seconds
