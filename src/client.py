@@ -112,7 +112,7 @@ def main():
         help="Server IP address (default: 127.0.0.1)",
     )
     parser.add_argument(
-        "-p", "--port", type=int, default=4005, help="Server port (default: 12345)"
+        "-p", "--port", type=int, default=12345, help="Server port (default: 12345)"
     )
     args = parser.parse_args()
 
