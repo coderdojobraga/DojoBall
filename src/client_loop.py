@@ -13,7 +13,7 @@ COLOR_BORDER_KICK = pygame.Color("white")
 COLOR_KICK_RANGE = pygame.Color(200, 200, 200, 100)
 
 
-def step(client_socket, screen, transparent_surface, name_font):
+def step(client_socket, screen, transparent_surface, name_font, player_id, name):
     # Boilerplate para eventos
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -29,7 +29,7 @@ def step(client_socket, screen, transparent_surface, name_font):
     state = receive_data(client_socket)
 
     # Desenhar o estado
-    render(state, screen, transparent_surface, name_font, client_socket.getsockname())
+    render(state, screen, transparent_surface, name_font, player_id)
 
     return True
 
@@ -59,7 +59,7 @@ def get_input(keys):
     )
 
 
-def render(state, screen, transparent_surface, name_font, sockname):
+def render(state, screen, transparent_surface, name_font, player_id):
     # Desenhar fundo
     transparent_surface.fill((0, 0, 0, 0))
     screen.fill(COLOR_FIELD)
@@ -70,7 +70,8 @@ def render(state, screen, transparent_surface, name_font, sockname):
     draw_ball(state.ball, screen)
 
     # Desenhar o jogador local
-    draw_myself(state.players.pop(sockname), screen, transparent_surface)
+    if player_id in state.players:
+        draw_myself(state.players.pop(player_id), screen, transparent_surface)
 
     # Desenhar os outros jogadores
     for player in state.players.values():

@@ -1,0 +1,9 @@
+services:
+  dojoball-server:
+    image: ruilopesm/dojoball-server:latest
+    environment:
+      SDL_VIDEODRIVER: dummy
+      PYTHONUNBUFFERED: "1"
+    stdin_open: true
+    ports:
+      - "4005:12345"
