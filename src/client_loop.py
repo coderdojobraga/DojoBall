@@ -56,6 +56,8 @@ def get_input(keys):
         keys[pygame.K_a],
         keys[pygame.K_d],
         keys[pygame.K_SPACE],
+        pygame.display.get_window_size()[0],
+        pygame.display.get_window_size()[1],
     )
 
 
