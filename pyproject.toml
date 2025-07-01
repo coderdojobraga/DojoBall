@@ -1,9 +1,19 @@
-[project]
+[tool.poetry]
 name = "dojoball"
 version = "0.1.0"
-description = "An Haxball clone for CoderDojo."
-authors = ["Carlos Ferreira carloshsf3899@gmail.com"]
+description = "An Haxball clone for CoderCamp 25"
+authors = ["CoderDojo Braga <geral@coderdojobraga.org>"]
 license = "GPL-3.0-or-later"
-dependencies = [
-    "pygame>2.6.0"
-]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pygame = ">2.6.0"
+pygments = ">2.19.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

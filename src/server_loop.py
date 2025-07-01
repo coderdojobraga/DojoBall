@@ -2,7 +2,7 @@ import math
 import pickle
 import pygame
 from itertools import combinations, product
-from state import FIELD_WIDTH, PLAYER_AREA_BR_X, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_X, PLAYER_AREA_TL_Y, Team, FIELD_TL_X, FIELD_TL_Y, FIELD_HEIGHT
+from state import FIELD_WIDTH, PLAYER_AREA_BR_X, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_X, PLAYER_AREA_TL_Y, Team, FIELD_TL_X, FIELD_TL_Y, FIELD_HEIGHT, MatchManager, MatchState
 
 
 def moving_circles(state):
@@ -11,20 +11,31 @@ def moving_circles(state):
 
 
 def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
+    dt = clock.tick(60) / 1000.0  # Time since last frame
+
     with state_lock:
-        for address, player in state.players.items():
-            if address in inputs:
-                apply_input(player, inputs[address])
-                del inputs[address]
+        prev_state = state.match_manager.state
+        state.match_manager.update(dt, state.score_red, state.score_blue)
+        # Reset scores if match just ended (PLAYING -> BREAK)
+        if prev_state in [MatchState.PLAYING, MatchState.OVERTIME] and state.match_manager.state == MatchState.BREAK:
+            reset_scores(state)
+            reset_ball(state)
+            reset_players(state)
 
-        for circle in moving_circles(state):
-            update_position(circle)
+        if state.match_manager.state in [MatchState.PLAYING, MatchState.OVERTIME]:
+            for address, player in state.players.items():
+                if address in inputs:
+                    apply_input(player, inputs[address])
+                    del inputs[address]
 
-        handle_collisions(state)
+            for circle in moving_circles(state):
+                update_position(circle)
 
-        handle_kicks(state)
+            handle_collisions(state)
 
-        check_goal(state)
+            handle_kicks(state)
+
+            check_goal(state)
 
         state.clock = pygame.time.get_ticks() // 1000
 
@@ -35,8 +46,6 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
             send_cond.notify_all()
 
         clear_kicks(state)
-
-    clock.tick(60)
 
     return True
 
@@ -242,3 +251,8 @@ def reset_players(state):
         player.vx = 0
         player.vy = 0
         player.kick = False
+
+
+def reset_scores(state):
+    state.score_blue = 0
+    state.score_red = 0

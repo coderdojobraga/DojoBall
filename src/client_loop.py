@@ -13,7 +13,7 @@ COLOR_BORDER_KICK = pygame.Color("white")
 COLOR_KICK_RANGE = pygame.Color(200, 200, 200, 100)
 
 
-def step(client_socket, screen, transparent_surface, name_font):
+def step(client_socket, screen, transparent_surface, name_font, player_id, name):
     # Boilerplate para eventos
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -29,7 +29,7 @@ def step(client_socket, screen, transparent_surface, name_font):
     state = receive_data(client_socket)
 
     # Desenhar o estado
-    render(state, screen, transparent_surface, name_font, client_socket.getsockname())
+    render(state, screen, transparent_surface, name_font, player_id)
 
     return True
 
@@ -59,7 +59,7 @@ def get_input(keys):
     )
 
 
-def render(state, screen, transparent_surface, name_font, sockname):
+def render(state, screen, transparent_surface, name_font, player_id):
     # Desenhar fundo
     transparent_surface.fill((0, 0, 0, 0))
     screen.fill(COLOR_FIELD)
@@ -70,7 +70,8 @@ def render(state, screen, transparent_surface, name_font, sockname):
     draw_ball(state.ball, screen)
 
     # Desenhar o jogador local
-    draw_myself(state.players.pop(sockname), screen, transparent_surface)
+    if player_id in state.players:
+        draw_myself(state.players.pop(player_id), screen, transparent_surface)
 
     # Desenhar os outros jogadores
     for player in state.players.values():
@@ -250,3 +251,19 @@ def draw_hud(screen, state):
     clock_min_tens = font.render(f"{state.clock // 600}", True, font_color)
     clock_min_tens_pos = clock_min_ones_pos - clock_digit_width
     screen.blit(clock_min_tens, (clock_min_tens_pos + round((clock_digit_width - clock_min_tens.get_width()) / 2), font_pos_y))
+
+    # Desenhar estado da partida
+    minutes = int(state.match_manager.time_remaining) // 60
+    seconds = int(state.match_manager.time_remaining) % 60
+    match_state_text = f"{state.match_manager.state.name.capitalize()}: {minutes:02d}:{seconds:02d}"
+    match_state_surface = font.render(match_state_text, True, font_color)
+
+    # Calcular a posição central do HUD
+    hud_center_x = hud_pos_x + hud_width / 2
+    text_width = match_state_surface.get_width()
+
+    # Ajustar a posição do texto para centralizar
+    text_pos_x = hud_center_x - text_width / 2
+    text_pos_y = font_pos_y
+
+    screen.blit(match_state_surface, (text_pos_x, text_pos_y))

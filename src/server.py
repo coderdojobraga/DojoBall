@@ -4,7 +4,8 @@ import pygame
 import pickle
 import readline
 import server_loop as loop
-from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_TL_X, Team
+import uuid
+from state import Player, State, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AREA_HEIGHT, PLAYER_AREA_TL_Y, PLAYER_AREA_BR_X, PLAYER_AREA_TL_X, Team, MatchManager
 from threading import Condition, Lock, Thread
 from hot_reloading import hot_cycle
 
@@ -49,7 +50,7 @@ def main():
     )
     game_cycle_thread.start()
 
-    interpreter_thread = Thread(target=interpreter, daemon=True)
+    interpreter_thread = Thread(target=interpreter, args=(state,), daemon=True)
     interpreter_thread.start()
 
     with socketserver.ThreadingTCPServer(("0.0.0.0", port), GameTCPHandler) as server:
@@ -73,10 +74,27 @@ def game_cycle(debug, state, clock, inputs, state_lock, send_cond, last_state_pi
             pass
 
 
-def interpreter():
+def interpreter(state):
     while True:
         line = input(">>> ")
-        exec(line)
+        if line.startswith("start_match"):
+            state.match_manager.start_match()
+        elif line.startswith("pause_match"):
+            state.match_manager.pause_match()
+            print("Match paused")
+        elif line.startswith("resume_match"):
+            state.match_manager.resume_match()
+            print("Match resumed")
+        elif line.startswith("set_match_time"):
+            _, seconds = line.split()
+            state.match_manager.set_match_time(int(seconds))
+            print(f"Match time set to {seconds} seconds")
+        elif line.startswith("set_break_time"):
+            _, seconds = line.split()
+            state.match_manager.set_break_time(int(seconds))
+            print(f"Break time set to {seconds} seconds")
+        else:
+            exec(line)
 
 
 MAX_NAME_ATTEMPTS = 3
@@ -85,6 +103,12 @@ MAX_TEAM_ATTEMPTS = 3
 
 class GameTCPHandler(socketserver.BaseRequestHandler):
     def setup(self):
+        # Assing player a unique ID
+        self.player_id = str(uuid.uuid4())
+        data_bytes = pickle.dumps(self.player_id)
+        self.request.sendall(len(data_bytes).to_bytes(4, "big"))
+        self.request.sendall(data_bytes)
+
         # Send teams and players to the client
         with state_lock:
             players_blue = [p.name for p in state.players.values() if p.team == Team.BLUE]
@@ -165,11 +189,11 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
 
         with state_lock:
             # Initialize position for new player
-            if self.client_address not in state.players:
+            if self.player_id not in state.players:
                 if team == Team.RED:
-                    state.players[self.client_address] = Player(name, team, PLAYER_AREA_TL_X + 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
+                    state.players[self.player_id] = Player(name, team, PLAYER_AREA_TL_X + 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
                 else:
-                    state.players[self.client_address] = Player(name, team, PLAYER_AREA_BR_X - 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
+                    state.players[self.player_id] = Player(name, team, PLAYER_AREA_BR_X - 45, PLAYER_AREA_TL_Y + PLAYER_AREA_HEIGHT / 2)
 
             clients.append(self.request)
 
@@ -187,7 +211,7 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
 
             input = pickle.loads(data)
 
-            inputs[self.client_address] = input
+            inputs[self.player_id] = input
 
             with send_cond:
                 send_cond.wait()
@@ -195,13 +219,15 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
 
     def finish(self):
         with state_lock:
-            if self.client_address in state.players:
-                print(f"{state.players[self.client_address].name} left")
+            if self.player_id in state.players:
+                print(f"{state.players[self.player_id].name} left")
                 # Remove client data on disconnect
                 if self.request in clients:
                     clients.remove(self.request)
-                if self.client_address in state.players:
-                    del state.players[self.client_address]
+                if self.player_id in state.players:
+                    del state.players[self.player_id]
+                if self.player_id in inputs:
+                    del inputs[self.player_id]
 
 
 if __name__ == "__main__":

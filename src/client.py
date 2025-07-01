@@ -11,6 +11,13 @@ class TooManyTriesError(Exception):
     pass
 
 def initial_configuration(client_socket):
+    # Receive player ID from server
+    try:
+        player_id = receive_data(client_socket)
+    except (ConnectionResetError, ConnectionAbortedError):
+        print("Error receiving player ID from server.")
+        return None
+
     # Receber equipas e jogadores do servidor
     try:
         initial_info = receive_data(client_socket)
@@ -86,6 +93,8 @@ def initial_configuration(client_socket):
         if not is_team_valid:
             print("This team can't be choosen. Please type another one.")
 
+    return player_id, name
+
 
 def main():
     parser = argparse.ArgumentParser(description="Haxball Game Client")
@@ -116,7 +125,9 @@ def main():
 
     try:
         # Ver equipas e jogadores, escolher o nome e equipa
-        initial_configuration(client_socket)
+        player_id, name = initial_configuration(client_socket)
+        if player_id is None:
+            return
 
         # Iniciar pygame
         pygame.init()
@@ -129,10 +140,10 @@ def main():
         if debug:
             # Debug mode
             print("Debug mode enabled. Hot reloading is active.")
-            hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font)
+            hot_cycle(loop.step, client_socket, screen, transparent_surface, name_font, player_id, name)
         else:
             # Normal mode
-            while loop.step(client_socket, screen, transparent_surface, name_font):
+            while loop.step(client_socket, screen, transparent_surface, name_font, player_id, name):
                 pass
 
         client_socket.close()
