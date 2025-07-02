@@ -122,6 +122,8 @@ def handle_collisions(state):
         if distance_sqr < radius_sum**2:
             # Resolve overlap
             distance = math.sqrt(distance_sqr)
+            if distance == 0:
+                distance = 1e-6
             nx = dx / distance
             ny = dy / distance
             overlap = radius_sum - distance
