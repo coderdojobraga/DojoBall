@@ -1,3 +1,4 @@
+import copy
 import math
 import pickle
 import pygame
@@ -10,7 +11,7 @@ def moving_circles(state):
     yield state.ball
 
 
-def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
+def step(state, clock, inputs, state_lock, send_cond, last_state):
     dt = clock.tick(60) / 1000.0  # Time since last frame
 
     with state_lock:
@@ -39,8 +40,7 @@ def step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
 
         state.clock = pygame.time.get_ticks() // 1000
 
-        data = pickle.dumps(state)
-        last_state_pickle[:] = len(data).to_bytes(4, "big") + data
+        last_state[0] = copy.deepcopy(state)
 
         with send_cond:
             send_cond.notify_all()

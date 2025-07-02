@@ -1,4 +1,5 @@
 import argparse
+import copy
 import socketserver
 import pygame
 import pickle
@@ -15,7 +16,7 @@ send_cond = Condition()
 
 clients = []
 inputs = {}
-last_state_pickle = bytearray()
+last_state = [None]
 
 state = State()
 
@@ -45,7 +46,7 @@ def main():
 
     game_cycle_thread = Thread(
         target=game_cycle,
-        args=(debug, state, clock, inputs, state_lock, send_cond, last_state_pickle),
+        args=(debug, state, clock, inputs, state_lock, send_cond, last_state),
         daemon=True,
     )
     game_cycle_thread.start()
@@ -61,16 +62,16 @@ def main():
     interpreter_thread.join()
 
 
-def game_cycle(debug, state, clock, inputs, state_lock, send_cond, last_state_pickle):
+def game_cycle(debug, state, clock, inputs, state_lock, send_cond, last_state):
     if debug:
         # Debug mode
         print("Debug mode enabled. Hot reloading is active.")
         hot_cycle(
-            loop.step, state, clock, inputs, state_lock, send_cond, last_state_pickle
+            loop.step, state, clock, inputs, state_lock, send_cond, last_state
         )
     else:
         # Normal mode
-        while loop.step(state, clock, inputs, state_lock, send_cond, last_state_pickle):
+        while loop.step(state, clock, inputs, state_lock, send_cond, last_state):
             pass
 
 
@@ -210,12 +211,17 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                 break
 
             input = pickle.loads(data)
-
+            window_width = input.window_width
+            window_height = input.window_height
             inputs[self.player_id] = input
 
             with send_cond:
                 send_cond.wait()
-                self.request.sendall(last_state_pickle)
+                default_size_state = copy.deepcopy(last_state[0])
+                prepared_state = scale_and_offset_state(default_size_state, window_width, window_height)
+                data = pickle.dumps(prepared_state)
+                state_pickled = len(data).to_bytes(4, "big") + data
+                self.request.sendall(state_pickled)
 
     def finish(self):
         with state_lock:
@@ -228,6 +234,44 @@ class GameTCPHandler(socketserver.BaseRequestHandler):
                     del state.players[self.player_id]
                 if self.player_id in inputs:
                     del inputs[self.player_id]
+
+
+def scale_and_offset_state(default_size_state, window_width, window_height):
+    scale_ratio = min(window_height / SCREEN_HEIGHT, window_width / SCREEN_WIDTH)
+
+    field_x1 = default_size_state.field_coords[0] * scale_ratio
+    field_y1 = default_size_state.field_coords[1] * scale_ratio
+    field_x2 = default_size_state.field_coords[2] * scale_ratio
+    field_y2 = default_size_state.field_coords[3] * scale_ratio
+
+    field_width = field_x2 - field_x1
+    field_height = field_y2 - field_y1
+
+    offset_x = (window_width - field_width) / 2 - field_x1
+    offset_y = (window_height - field_height) / 2 - field_y1
+
+    # Adjust players, ball, and posts coordinates and radii
+    for player in default_size_state.players.values():
+        scale_and_offset_circle(player, scale_ratio, offset_x, offset_y)
+    scale_and_offset_circle(default_size_state.ball, scale_ratio, offset_x, offset_y)
+    for post in default_size_state.posts.values():
+        scale_and_offset_circle(post, scale_ratio, offset_x, offset_y)
+
+    # Adjust field coordinates
+    default_size_state.field_coords = (
+        round(field_x1 + offset_x),
+        round(field_y1 + offset_y),
+        round(field_x2 + offset_x),
+        round(field_y2 + offset_y),
+    )
+
+    return default_size_state
+
+
+def scale_and_offset_circle(circle, scale_ratio, offset_x, offset_y):
+    circle.x = round(circle.x * scale_ratio + offset_x)
+    circle.y = round(circle.y * scale_ratio + offset_y)
+    circle.radius = round(circle.radius * scale_ratio)
 
 
 if __name__ == "__main__":
